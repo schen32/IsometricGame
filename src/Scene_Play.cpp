@@ -166,35 +166,32 @@ void Scene_Play::sStatus()
 
 void Scene_Play::sCollision()
 {
-	for (auto& e1 : m_entityManager.getEntities())
+	auto& pTransform = player()->get<CTransform>();
+	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
-		for (auto& e2 : m_entityManager.getEntities())
-		{
-			if (e1->id() == e2->id())
-				continue;
+		if (player()->id() == tile->id())
+			continue;
 
-			auto overlap = Physics::GetOverlap(e1, e2);
-			if (overlap.x > 0 && overlap.y > 0)
+		auto overlap = Physics::GetOverlap(player(), tile);
+		if (overlap.x > 0 && overlap.y > 0)
+		{
+			auto& tileTransform = tile->get<CTransform>();
+			Vec2f prevOverlap = Physics::GetPreviousOverlap(player(), tile);
+			if (prevOverlap.x > 0)
 			{
-				auto& e1Transform = e1->get<CTransform>();
-				auto& e2Transform = e2->get<CTransform>();
-				Vec2f prevOverlap = Physics::GetPreviousOverlap(e1, e2);
-				if (prevOverlap.x > 0)
-				{
-					e1Transform.velocity.y = 0;
-					if (e1Transform.prevPos.y < e2Transform.pos.y)
-						e1Transform.pos.y -= overlap.y;
-					else
-						e1Transform.pos.y += overlap.y;
-				}
-				else if (prevOverlap.y > 0)
-				{
-					e1Transform.velocity.x = 0;
-					if (e1Transform.prevPos.x < e2Transform.pos.x)
-						e1Transform.pos.x -= overlap.x;
-					else
-						e1Transform.pos.x += overlap.x;
-				}
+				pTransform.velocity.y = 0;
+				if (pTransform.prevPos.y < tileTransform.pos.y)
+					pTransform.pos.y -= overlap.y;
+				else
+					pTransform.pos.y += overlap.y;
+			}
+			else if (prevOverlap.y > 0)
+			{
+				pTransform.velocity.x = 0;
+				if (pTransform.prevPos.x < tileTransform.pos.x)
+					pTransform.pos.x -= overlap.x;
+				else
+					pTransform.pos.x += overlap.x;
 			}
 		}
 	}
@@ -308,8 +305,14 @@ void Scene_Play::sRender()
 	auto& window = m_game->window();
 	window.clear(sf::Color(204, 226, 225));
 
+	const static float padding = 128.0f;
+	sf::Vector2f viewCenter = m_cameraView.getCenter();
+	sf::Vector2f viewSize = m_cameraView.getSize() + sf::Vector2f(padding, padding);
+	sf::FloatRect visibleArea(viewCenter - viewSize / 2.f, viewSize);
 	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
+		if (!Utils::isVisible(tile, visibleArea)) continue;
+
 		auto& transform = tile->get<CTransform>();
 		auto& animation = tile->get<CAnimation>().animation;
 

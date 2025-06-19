@@ -10,6 +10,12 @@ class Utils
 public:
 	Utils() = default;
 
+	static bool isVisible(std::shared_ptr<Entity> entity, const sf::FloatRect& visibleArea)
+	{
+		auto& pos = entity->get<CTransform>().pos;
+		return visibleArea.contains(pos);
+	}
+
 	bool static isInsideTopFace(const Vec2f& pos, std::shared_ptr<Entity> entity)
 	{
 		auto eTransform = entity->get<CTransform>();
