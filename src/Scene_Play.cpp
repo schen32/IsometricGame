@@ -38,7 +38,7 @@ void Scene_Play::init(const std::string& levelPath)
 	registerKeyAction(sf::Keyboard::Scan::Down, "DOWN");
 
 	m_cameraView.setSize(sf::Vector2f(width(), height()));
-	m_cameraView.zoom(1.0f);
+	m_cameraView.zoom(0.5f);
 	m_game->window().setView(m_cameraView);
 
 	loadLevel(levelPath);
@@ -52,13 +52,14 @@ Vec2f Scene_Play::gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entit
 	return Vec2f
 	(
 		gridX * eAniSize.x + eAniSize.x / 2,
-		height() - gridY * eAniSize.y - eAniSize.y / 2
+		-(gridY * eAniSize.y - eAniSize.y / 2)
 	);
 }
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
 	m_entityManager = EntityManager();
+	spawnTiles(filename);
 	spawnPlayer();
 	m_entityManager.update();
 }
@@ -78,6 +79,27 @@ void Scene_Play::spawnPlayer()
 	auto& pAnimation = p->add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
 	auto& pTransform = p->add<CTransform>();
 	p->add<CInput>();
+}
+
+void Scene_Play::spawnTiles(const std::string& filename)
+{
+	auto file = std::ifstream(filename);
+	while (file.good())
+	{
+		std::string type;
+		file >> type;
+		if (type == "Tile")
+		{
+			std::string aniName;
+			int gridX, gridY;
+			file >> aniName >> gridX >> gridY;
+
+			auto tile = m_entityManager.addEntity("tile", aniName);
+			tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
+			tile->add<CTransform>(gridToMidPixel(gridX, gridY, tile));
+		}
+	}
+	file.close();
 }
 
 void Scene_Play::update()
@@ -266,9 +288,6 @@ void Scene_Play::sRender()
 {
 	auto& window = m_game->window();
 	window.clear(sf::Color(204, 226, 225));
-
-	sf::CircleShape circle(100.0f);
-	window.draw(circle);
 
 	for (auto& entity : m_entityManager.getEntities())
 	{

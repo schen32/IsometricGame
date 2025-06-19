@@ -12,5 +12,10 @@ Animation StormheadRun TexStormheadRun 10 1 10 5
 Texture TexStormheadDeath assets/stormhead/death.png
 Animation StormheadDeath TexStormheadDeath 9 1 9 10
 
+Texture TexSandTile assets/tiles/sand32.png
+Animation SandTile TexSandTile 1 1 1 0
+Texture TexWaterTile assets/tiles/water32.png
+Animation WaterTile TexWaterTile 1 1 1 0
+
 Sound BubbleStep assets/sounds/DSGNMisc_STEP-Bubble_Step_HY_PC-001.wav
 Sound BubblierStep assets/sounds/DSGNMisc_STEP-Bubblier_Step_HY_PC-001.wav

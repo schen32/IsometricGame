@@ -25,6 +25,7 @@ protected:
 	void onExitScene();
 	void update();
 	void spawnPlayer();
+	void spawnTiles(const std::string& filename);
 
 	std::shared_ptr<Entity> player();
 	void sDoAction(const Action& action);

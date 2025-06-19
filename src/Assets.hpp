@@ -110,6 +110,7 @@ public:
 				std::cerr << "Unknown Asset Type: " << str << std::endl;
 			}
 		}
+		file.close();
 	}
 
 	const sf::Texture& getTexture(const std::string& textureName) const

@@ -106,7 +106,7 @@ void Scene_Menu::select()
 		if (!Utils::IsInside(m_mousePos, button)) continue;
 
 		if (button->name() == "Start")
-			m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game));
+			m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, "assets/play.txt"));
 		else if (button->name() == "Quit")
 			onEnd();
 	}
