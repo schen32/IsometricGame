@@ -26,7 +26,7 @@ public:
 		return false;
 	}
 
-	Vec2f static gridToIsometric(float gridX, float gridY, std::shared_ptr<Entity> entity)
+	Vec2f static gridToIsometric(float gridX, float gridY, float gridZ, std::shared_ptr<Entity> entity)
 	{
 		auto& eAnimation = entity->get<CAnimation>();
 		Vec2f eSize = eAnimation.animation.m_size;
@@ -34,7 +34,7 @@ public:
 		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
 		Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
 
-		return (i * gridX + j * gridY);
+		return (i * gridX + j * gridY) - Vec2f(0, gridZ * eSize.y / 2);
 	}
 
 	Vec2f static isometricToGrid(float isoX, float isoY, Vec2f gridCellSize)

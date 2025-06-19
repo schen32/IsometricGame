@@ -36,9 +36,10 @@ class CGridPosition : public Component
 public:
 	int x = 0;
 	int y = 0;
+	int z = 0;
 
 	CGridPosition() = default;
-	CGridPosition(int x, int y): x(x), y(y) {}
+	CGridPosition(int x, int y, int z): x(x), y(y), z(z) {}
 };
 
 class CInput : public Component

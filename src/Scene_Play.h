@@ -28,7 +28,7 @@ protected:
 	void update();
 	void spawnPlayer();
 	void spawnTiles(const std::string& filename);
-	void spawnTile(float gridX, float gridY, const std::string& aniName);
+	void spawnTile(float gridX, float gridY, float gridZ, const std::string& aniName);
 
 	std::shared_ptr<Entity> player();
 	void sDoAction(const Action& action);

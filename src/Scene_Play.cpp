@@ -65,7 +65,7 @@ void Scene_Play::spawnPlayer()
 	m_playerDied = false;
 	
 	auto& pAnimation = p->add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
-	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(0, 0, p));
+	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(0, 0, 0, p));
 	p->add<CInput>();
 }
 
@@ -75,17 +75,16 @@ void Scene_Play::spawnTiles(const std::string& filename)
 	{
 		for (int j = 0; j < m_gridSize.y; j++)
 		{
-			spawnTile(i, j, "SandTile");
+			spawnTile(i, j, rand() % 3, "SandTile");
 		}
 	}
 }
 
-void Scene_Play::spawnTile(float gridX, float gridY, const std::string& aniName)
+void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const std::string& aniName)
 {
 	auto tile = m_entityManager.addEntity("tile", aniName);
 	tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
-	tile->add<CTransform>(Utils::gridToIsometric(gridX, gridY, tile));
-	tile->add<CGridPosition>(gridX, gridY);
+	tile->add<CTransform>(Utils::gridToIsometric(gridX, gridY, gridZ, tile));
 }
 
 void Scene_Play::update()
