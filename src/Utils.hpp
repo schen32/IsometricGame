@@ -10,22 +10,31 @@ class Utils
 public:
 	Utils() = default;
 
-	bool static isInside(const Vec2f& pos, std::shared_ptr<Entity> entity)
+	bool static isInsideTopFace(const Vec2f& pos, std::shared_ptr<Entity> entity)
 	{
 		auto eTransform = entity->get<CTransform>();
-		auto ePosition = eTransform.pos;
-		auto eScale = eTransform.scale;
-		auto eSize = entity->get<CAnimation>().animation.m_size;
-		eSize.x *= eScale.x;
-		eSize.y *= eScale.y;
+		Vec2f spriteCenter = eTransform.pos; // center of entire sprite
+		Vec2f scale = eTransform.scale;
+		Vec2f size = entity->get<CAnimation>().animation.m_size;
 
-		if (ePosition.x - eSize.x / 2 <= pos.x && pos.x <= ePosition.x + eSize.x / 2 &&
-			ePosition.y - eSize.y / 2 <= pos.y && pos.y <= ePosition.y + eSize.y / 2)
-		{
-			return true;
-		}
-		return false;
+		// Apply scale
+		size.x *= scale.x;
+		size.y *= scale.y;
+
+		// Calculate center of the top diamond face (top half of sprite)
+		Vec2f topFaceCenter = spriteCenter - Vec2f(0, size.y / 4.0f);  // Move up by 1/4 height
+
+		// Diamond bounds
+		float halfWidth = size.x / 2.0f;
+		float halfHeight = size.y / 4.0f; // Because top face is only top half
+
+		// Check point-in-diamond condition
+		float dx = std::abs(pos.x - topFaceCenter.x);
+		float dy = std::abs(pos.y - topFaceCenter.y);
+
+		return (dx / halfWidth + dy / halfHeight) <= 1.0f;
 	}
+
 
 	Vec2f static gridToIsometric(Grid3D gridPos, std::shared_ptr<Entity> entity)
 	{
@@ -35,8 +44,7 @@ public:
 		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
 		Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
 
-		return (i * gridPos.x + j * gridPos.y) - Vec2f(0, gridPos.z * eSize.y / 2) +
-			Vec2f(0, eSize.y / 2);
+		return (i * gridPos.x + j * gridPos.y) - Vec2f(0, gridPos.z * eSize.y / 2);
 	}
 
 	Vec2f static isometricToGrid(float isoX, float isoY, int z, Vec2f gridCellSize)

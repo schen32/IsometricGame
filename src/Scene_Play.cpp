@@ -202,21 +202,14 @@ void Scene_Play::sCollision()
 
 void Scene_Play::sSelect()
 {
-	static const int heightLimit = 256;
-	for (int gridZ = heightLimit; gridZ >= 0; gridZ--)
+	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
-		Vec2f selectedGrid = Utils::isometricToGrid(m_mousePos.x, m_mousePos.y, gridZ, m_gridCellSize);
-		Grid3D gridPos(static_cast<int>(selectedGrid.x), static_cast<int>(selectedGrid.y), gridZ);
-
-		if (auto selectedTile = m_tileMap[gridPos])
-		{
-			if (m_selectedTile)
-				m_selectedTile->get<CState>().state = "unselected";
-
-			m_selectedTile = selectedTile;
-			m_selectedTile->get<CState>().state = "selected";
-			break;
-		}
+		auto& tileState = tile->get<CState>().state;
+		bool insideTile = Utils::isInsideTopFace(m_mousePos, tile);
+		if (insideTile && tileState != "selected")
+			tileState = "selected";
+		else if (!insideTile && tileState != "unselected")
+			tileState = "unselected";
 	}
 }
 
@@ -240,14 +233,17 @@ void Scene_Play::sDoAction(const Action& action)
 		else if (action.m_name == "LEFT_CLICK")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
-			sSelect();
+			
 		}
 		else if (action.m_name == "RIGHT_CLICK")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
 		}
 		else if (action.m_name == "MOUSE_MOVE")
+		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
+			sSelect();
+		}
 	}
 	else if (action.m_type == "END")
 	{
