@@ -10,8 +10,13 @@ class Utils
 public:
 	Utils() = default;
 
-	static bool isVisible(std::shared_ptr<Entity> entity, const sf::FloatRect& visibleArea)
+	static bool isVisible(std::shared_ptr<Entity> entity, const sf::View& cameraView)
 	{
+		const float padding = 128.0f;
+		sf::Vector2f viewCenter = cameraView.getCenter();
+		sf::Vector2f viewSize = cameraView.getSize() + sf::Vector2f(padding, padding);
+		sf::FloatRect visibleArea(viewCenter - viewSize / 2.f, viewSize);
+
 		auto& pos = entity->get<CTransform>().pos;
 		return visibleArea.contains(pos);
 	}

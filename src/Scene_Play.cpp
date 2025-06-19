@@ -172,6 +172,8 @@ void Scene_Play::sCollision()
 		if (player()->id() == tile->id())
 			continue;
 
+		if (!Utils::isVisible(tile, m_cameraView)) continue;
+
 		auto overlap = Physics::GetOverlap(player(), tile);
 		if (overlap.x > 0 && overlap.y > 0)
 		{
@@ -201,6 +203,8 @@ void Scene_Play::sSelect()
 {
 	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
+		if (!Utils::isVisible(tile, m_cameraView)) continue;
+
 		auto& tileState = tile->get<CState>().state;
 		bool insideTile = Utils::isInsideTopFace(m_mousePos, tile);
 		if (insideTile && tileState != "selected")
@@ -261,6 +265,8 @@ void Scene_Play::sAnimation()
 		if (!entity->has<CAnimation>())
 			continue;
 
+		if (!Utils::isVisible(entity, m_cameraView)) continue;
+
 		auto& eAnimation = entity->get<CAnimation>();
 		eAnimation.animation.update();
 
@@ -305,13 +311,9 @@ void Scene_Play::sRender()
 	auto& window = m_game->window();
 	window.clear(sf::Color(204, 226, 225));
 
-	const static float padding = 128.0f;
-	sf::Vector2f viewCenter = m_cameraView.getCenter();
-	sf::Vector2f viewSize = m_cameraView.getSize() + sf::Vector2f(padding, padding);
-	sf::FloatRect visibleArea(viewCenter - viewSize / 2.f, viewSize);
 	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, visibleArea)) continue;
+		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
 		auto& transform = tile->get<CTransform>();
 		auto& animation = tile->get<CAnimation>().animation;
