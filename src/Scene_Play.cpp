@@ -44,43 +44,6 @@ void Scene_Play::init(const std::string& levelPath)
 	loadLevel(levelPath);
 }
 
-Vec2f Scene_Play::gridToIsometric(float gridX, float gridY, std::shared_ptr<Entity> entity)
-{
-	auto& eAnimation = entity->get<CAnimation>();
-	Vec2f eSize = eAnimation.animation.m_size;
-
-	Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
-	Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
-	
-	return (i * gridX + j * gridY);
-}
-
-Vec2f Scene_Play::isometricToGrid(float isoX, float isoY)
-{
-	Vec2f eSize = m_gridCellSize;
-
-	Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
-	Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
-
-	// Matrix elements
-	float a = i.x, b = j.x;
-	float c = i.y, d = j.y;
-
-	float det = a * d - b * c;
-	if (det == 0.0f) {
-		std::cerr << "Invalid basis vectors: determinant is zero!\n";
-		return Vec2f(0.f, 0.f);
-	}
-
-	float invDet = 1.0f / det;
-
-	// Apply inverse matrix
-	float gridX = invDet * (d * isoX - b * isoY);
-	float gridY = invDet * (-c * isoX + a * isoY);
-
-	return Vec2f(gridX, gridY);
-}
-
 void Scene_Play::loadLevel(const std::string& filename)
 {
 	m_entityManager = EntityManager();
@@ -102,31 +65,15 @@ void Scene_Play::spawnPlayer()
 	m_playerDied = false;
 	
 	auto& pAnimation = p->add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
-	auto& pTransform = p->add<CTransform>();
+	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(0, 0, p));
 	p->add<CInput>();
 }
 
 void Scene_Play::spawnTiles(const std::string& filename)
 {
-	/*auto file = std::ifstream(filename);
-	while (file.good())
+	for (int i = 0; i < m_gridSize.x; i++)
 	{
-		std::string type;
-		file >> type;
-		if (type == "Tile")
-		{
-			std::string aniName;
-			float gridX, gridY;
-			file >> aniName >> gridX >> gridY;
-
-			spawnTile(gridX, gridY, aniName);
-		}
-	}
-	file.close();*/
-
-	for (int i = -m_gridSize.x / 2; i < m_gridSize.x / 2; i++)
-	{
-		for (int j = -m_gridSize.y / 2; j < m_gridSize.y / 2; j++)
+		for (int j = 0; j < m_gridSize.y; j++)
 		{
 			spawnTile(i, j, "SandTile");
 		}
@@ -137,9 +84,8 @@ void Scene_Play::spawnTile(float gridX, float gridY, const std::string& aniName)
 {
 	auto tile = m_entityManager.addEntity("tile", aniName);
 	tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
-	tile->add<CTransform>(gridToIsometric(gridX, gridY, tile));
+	tile->add<CTransform>(Utils::gridToIsometric(gridX, gridY, tile));
 	tile->add<CGridPosition>(gridX, gridY);
-	tile->add<CState>("unselected");
 }
 
 void Scene_Play::update()
@@ -336,14 +282,7 @@ void Scene_Play::sRender()
 		auto& transform = tile->get<CTransform>();
 		auto& animation = tile->get<CAnimation>().animation;
 
-		if (tile->get<CState>().state == "selected")
-		{
-			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
-		}
-		else
-		{
-			animation.m_sprite.setPosition(transform.pos);
-		}
+		animation.m_sprite.setPosition(transform.pos);
 		window.draw(animation.m_sprite);
 	}
 

@@ -9,7 +9,7 @@ class Utils
 public:
 	Utils() = default;
 
-	bool static IsInside(const Vec2f& pos, std::shared_ptr<Entity> entity)
+	bool static isInside(const Vec2f& pos, std::shared_ptr<Entity> entity)
 	{
 		auto eTransform = entity->get<CTransform>();
 		auto ePosition = eTransform.pos;
@@ -24,5 +24,42 @@ public:
 			return true;
 		}
 		return false;
+	}
+
+	Vec2f static gridToIsometric(float gridX, float gridY, std::shared_ptr<Entity> entity)
+	{
+		auto& eAnimation = entity->get<CAnimation>();
+		Vec2f eSize = eAnimation.animation.m_size;
+
+		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
+		Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
+
+		return (i * gridX + j * gridY);
+	}
+
+	Vec2f static isometricToGrid(float isoX, float isoY, Vec2f gridCellSize)
+	{
+		Vec2f eSize = gridCellSize;
+
+		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
+		Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
+
+		// Matrix elements
+		float a = i.x, b = j.x;
+		float c = i.y, d = j.y;
+
+		float det = a * d - b * c;
+		if (det == 0.0f) {
+			std::cerr << "Invalid basis vectors: determinant is zero!\n";
+			return Vec2f(0.f, 0.f);
+		}
+
+		float invDet = 1.0f / det;
+
+		// Apply inverse matrix
+		float gridX = invDet * (d * isoX - b * isoY);
+		float gridY = invDet * (-c * isoX + a * isoY);
+
+		return Vec2f(gridX, gridY);
 	}
 };

@@ -57,7 +57,7 @@ void Scene_Menu::sHover()
 	for (auto& button : m_entityManager.getEntities("button"))
 	{
 		auto& buttonState = button->get<CState>().state;
-		if (Utils::IsInside(m_mousePos, button))
+		if (Utils::isInside(m_mousePos, button))
 			buttonState = "selected";
 		else
 			buttonState = "unselected";
@@ -103,7 +103,7 @@ void Scene_Menu::select()
 {
 	for (auto& button : m_entityManager.getEntities("button"))
 	{
-		if (!Utils::IsInside(m_mousePos, button)) continue;
+		if (!Utils::isInside(m_mousePos, button)) continue;
 
 		if (button->name() == "Start")
 			m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, "assets/play.txt"));

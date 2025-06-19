@@ -32,8 +32,6 @@ protected:
 
 	std::shared_ptr<Entity> player();
 	void sDoAction(const Action& action);
-	Vec2f gridToIsometric(float gridX, float gridY, std::shared_ptr<Entity> entity);
-	Vec2f isometricToGrid(float posX, float posY);
 
 	void sMovement();
 	void sAI();
