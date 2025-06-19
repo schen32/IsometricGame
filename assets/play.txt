@@ -1,0 +1,4 @@
+Tile PlayerIdle 0 0
+Tile PlayerIdle 1 0
+Tile PlayerIdle 2 0
+Tile PlayerIdle 3 0

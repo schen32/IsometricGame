@@ -1,0 +1,16 @@
+Texture TexButton assets/GUI/Headed.png
+Animation Button TexButton 1 1 1 0
+Texture TexButtonHover assets/GUI/Headless.png
+Animation ButtonHover TexButtonHover 1 1 1 0
+
+Font FutureMillennium assets/fonts/FutureMillennium.ttf
+
+Texture TexStormheadIdle assets/stormhead/idle.png
+Animation StormheadIdle TexStormheadIdle 9 1 9 10
+Texture TexStormheadRun assets/stormhead/run.png
+Animation StormheadRun TexStormheadRun 10 1 10 5
+Texture TexStormheadDeath assets/stormhead/death.png
+Animation StormheadDeath TexStormheadDeath 9 1 9 10
+
+Sound BubbleStep assets/sounds/DSGNMisc_STEP-Bubble_Step_HY_PC-001.wav
+Sound BubblierStep assets/sounds/DSGNMisc_STEP-Bubblier_Step_HY_PC-001.wav
