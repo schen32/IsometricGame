@@ -35,6 +35,24 @@ public:
 		return (dx / halfWidth + dy / halfHeight) <= 1.0f;
 	}
 
+	bool static isInside(const Vec2f& point, const std::shared_ptr<Entity>& entity)
+	{
+		const auto& transform = entity->get<CTransform>();
+		const Vec2f& center = transform.pos;
+		const Vec2f& scale = transform.scale;
+
+		Vec2f size = entity->get<CAnimation>().animation.m_size;
+		size.x *= scale.x;
+		size.y *= scale.y;
+
+		const float left = center.x - size.x / 2.0f;
+		const float right = center.x + size.x / 2.0f;
+		const float top = center.y - size.y / 2.0f;
+		const float bottom = center.y + size.y / 2.0f;
+
+		return (point.x >= left && point.x <= right &&
+			point.y >= top && point.y <= bottom);
+	}
 
 	Vec2f static gridToIsometric(Grid3D gridPos, std::shared_ptr<Entity> entity)
 	{

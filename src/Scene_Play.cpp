@@ -233,7 +233,7 @@ void Scene_Play::sDoAction(const Action& action)
 		else if (action.m_name == "LEFT_CLICK")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
-			
+			sSelect();
 		}
 		else if (action.m_name == "RIGHT_CLICK")
 		{
@@ -242,7 +242,6 @@ void Scene_Play::sDoAction(const Action& action)
 		else if (action.m_name == "MOUSE_MOVE")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
-			sSelect();
 		}
 	}
 	else if (action.m_type == "END")
