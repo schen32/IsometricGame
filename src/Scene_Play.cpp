@@ -151,7 +151,6 @@ void Scene_Play::update()
 		sMovement();
 		sCollision();
 		sCamera();
-		sSelect();
 		sAnimation();
 	}
 
@@ -161,25 +160,10 @@ void Scene_Play::update()
 	}
 }
 
-void Scene_Play::sSelect()
-{
-	Vec2f selectedGridCell = isometricToGrid(m_mousePos.x, m_mousePos.y);
-	for (auto& tile : m_entityManager.getEntities("tile"))
-	{
-		auto& gridPos = tile->get<CGridPosition>();
-		auto& tileState = tile->get<CState>().state;
-		bool selected = static_cast<int>(selectedGridCell.x) == gridPos.x &&
-			static_cast<int>(selectedGridCell.y) == gridPos.y;
-
-		if (selected && tileState != "selected")
-			tileState = "selected";
-		else if (!selected && tileState != "unselected")
-			tileState = "unselected";
-	}
-}
-
 void Scene_Play::sMovement()
 {
+	static const float playerSpeed = 1.5f;
+
 	auto& pInput = player()->get<CInput>();
 	auto& pTransform = player()->get<CTransform>();
 
@@ -194,7 +178,7 @@ void Scene_Play::sMovement()
 	if (pTransform.velocity.x != 0.f || pTransform.velocity.y != 0.f)
 	{
 		player()->get<CState>().state = "running";
-		pTransform.velocity = pTransform.velocity.normalize() * 1.f;
+		pTransform.velocity = pTransform.velocity.normalize() * playerSpeed;
 	}
 	else
 		player()->get<CState>().state = "idle";

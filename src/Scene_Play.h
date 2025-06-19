@@ -17,7 +17,7 @@ protected:
 	bool					 m_playerDied = false;
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
-	Vec2f					 m_gridSize = { 16, 16 };
+	Vec2f					 m_gridSize = { 32, 32 };
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -42,7 +42,6 @@ protected:
 	void sCollision();
 	void sCamera();
 	void sGui();
-	void sSelect();
 public:
 
 	Scene_Play() = default;
