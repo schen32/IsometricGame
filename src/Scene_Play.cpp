@@ -44,16 +44,41 @@ void Scene_Play::init(const std::string& levelPath)
 	loadLevel(levelPath);
 }
 
-Vec2f Scene_Play::gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)
+Vec2f Scene_Play::gridToIsometric(float gridX, float gridY, std::shared_ptr<Entity> entity)
 {
 	auto& eAnimation = entity->get<CAnimation>();
-	Vec2f eAniSize = eAnimation.animation.m_size;
+	Vec2f eSize = eAnimation.animation.m_size;
+
+	Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
+	Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
 	
-	return Vec2f
-	(
-		gridX * eAniSize.x + eAniSize.x / 2,
-		-(gridY * eAniSize.y - eAniSize.y / 2)
-	);
+	return (i * gridX + j * gridY);
+}
+
+Vec2f Scene_Play::isometricToGrid(float isoX, float isoY)
+{
+	Vec2f eSize = m_gridCellSize;
+
+	Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
+	Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
+
+	// Matrix elements
+	float a = i.x, b = j.x;
+	float c = i.y, d = j.y;
+
+	float det = a * d - b * c;
+	if (det == 0.0f) {
+		std::cerr << "Invalid basis vectors: determinant is zero!\n";
+		return Vec2f(0.f, 0.f);
+	}
+
+	float invDet = 1.0f / det;
+
+	// Apply inverse matrix
+	float gridX = invDet * (d * isoX - b * isoY);
+	float gridY = invDet * (-c * isoX + a * isoY);
+
+	return Vec2f(gridX, gridY);
 }
 
 void Scene_Play::loadLevel(const std::string& filename)
@@ -83,7 +108,7 @@ void Scene_Play::spawnPlayer()
 
 void Scene_Play::spawnTiles(const std::string& filename)
 {
-	auto file = std::ifstream(filename);
+	/*auto file = std::ifstream(filename);
 	while (file.good())
 	{
 		std::string type;
@@ -91,15 +116,30 @@ void Scene_Play::spawnTiles(const std::string& filename)
 		if (type == "Tile")
 		{
 			std::string aniName;
-			int gridX, gridY;
+			float gridX, gridY;
 			file >> aniName >> gridX >> gridY;
 
-			auto tile = m_entityManager.addEntity("tile", aniName);
-			tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
-			tile->add<CTransform>(gridToMidPixel(gridX, gridY, tile));
+			spawnTile(gridX, gridY, aniName);
 		}
 	}
-	file.close();
+	file.close();*/
+
+	for (int i = -m_gridSize.x / 2; i < m_gridSize.x / 2; i++)
+	{
+		for (int j = -m_gridSize.y / 2; j < m_gridSize.y / 2; j++)
+		{
+			spawnTile(i, j, "SandTile");
+		}
+	}
+}
+
+void Scene_Play::spawnTile(float gridX, float gridY, const std::string& aniName)
+{
+	auto tile = m_entityManager.addEntity("tile", aniName);
+	tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
+	tile->add<CTransform>(gridToIsometric(gridX, gridY, tile));
+	tile->add<CGridPosition>(gridX, gridY);
+	tile->add<CState>("unselected");
 }
 
 void Scene_Play::update()
@@ -111,12 +151,30 @@ void Scene_Play::update()
 		sMovement();
 		sCollision();
 		sCamera();
+		sSelect();
 		sAnimation();
 	}
 
 	if (m_playerDied)
 	{
 		m_game->changeScene("MENU", std::make_shared<Scene_Menu>(m_game));
+	}
+}
+
+void Scene_Play::sSelect()
+{
+	Vec2f selectedGridCell = isometricToGrid(m_mousePos.x, m_mousePos.y);
+	for (auto& tile : m_entityManager.getEntities("tile"))
+	{
+		auto& gridPos = tile->get<CGridPosition>();
+		auto& tileState = tile->get<CState>().state;
+		bool selected = static_cast<int>(selectedGridCell.x) == gridPos.x &&
+			static_cast<int>(selectedGridCell.y) == gridPos.y;
+
+		if (selected && tileState != "selected")
+			tileState = "selected";
+		else if (!selected && tileState != "unselected")
+			tileState = "unselected";
 	}
 }
 
@@ -289,14 +347,25 @@ void Scene_Play::sRender()
 	auto& window = m_game->window();
 	window.clear(sf::Color(204, 226, 225));
 
-	for (auto& entity : m_entityManager.getEntities())
+	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
-		if (!entity->has<CAnimation>()) continue;
+		auto& transform = tile->get<CTransform>();
+		auto& animation = tile->get<CAnimation>().animation;
 
-		auto& transform = entity->get<CTransform>();
-		auto& animation = entity->get<CAnimation>().animation;
-
-		animation.m_sprite.setPosition(transform.pos);
+		if (tile->get<CState>().state == "selected")
+		{
+			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
+		}
+		else
+		{
+			animation.m_sprite.setPosition(transform.pos);
+		}
 		window.draw(animation.m_sprite);
 	}
+
+	auto& transform = player()->get<CTransform>();
+	auto& animation = player()->get<CAnimation>().animation;
+
+	animation.m_sprite.setPosition(transform.pos);
+	window.draw(animation.m_sprite);
 }

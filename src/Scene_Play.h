@@ -16,6 +16,8 @@ protected:
 	Vec2f					 m_mousePos;
 	bool					 m_playerDied = false;
 	std::string				 m_musicName;
+	Vec2f					 m_gridCellSize = { 32, 32 };
+	Vec2f					 m_gridSize = { 16, 16 };
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -26,10 +28,12 @@ protected:
 	void update();
 	void spawnPlayer();
 	void spawnTiles(const std::string& filename);
+	void spawnTile(float gridX, float gridY, const std::string& aniName);
 
 	std::shared_ptr<Entity> player();
 	void sDoAction(const Action& action);
-	Vec2f gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity);
+	Vec2f gridToIsometric(float gridX, float gridY, std::shared_ptr<Entity> entity);
+	Vec2f isometricToGrid(float posX, float posY);
 
 	void sMovement();
 	void sAI();
@@ -38,6 +42,7 @@ protected:
 	void sCollision();
 	void sCamera();
 	void sGui();
+	void sSelect();
 public:
 
 	Scene_Play() = default;

@@ -31,6 +31,16 @@ public:
 		: pos(p), velocity(v), angle(a) {}
 };
 
+class CGridPosition : public Component
+{
+public:
+	int x = 0;
+	int y = 0;
+
+	CGridPosition() = default;
+	CGridPosition(int x, int y): x(x), y(y) {}
+};
+
 class CInput : public Component
 {
 public:

@@ -8,6 +8,7 @@ class EntityManager;
 
 using ComponentTuple = std::tuple<
 	CTransform,
+	CGridPosition,
 	CInput,
 	CBoundingBox,
 	CAnimation,
