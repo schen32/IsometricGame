@@ -65,8 +65,10 @@ void Scene_Play::spawnPlayer()
 	m_playerDied = false;
 	
 	auto& pAnimation = p->add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
-	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(0, 0, 0, p));
-	p->add<CGridPosition>(Grid3D(0, 0, 0));
+
+	Grid3D gridPos(0, 0, 0);
+	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(gridPos, p));
+	p->add<CGridPosition>(gridPos);
 	p->add<CInput>();
 }
 
@@ -92,9 +94,9 @@ void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const std::str
 {
 	auto tile = m_entityManager.addEntity("tile", aniName);
 	tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
-	tile->add<CTransform>(Utils::gridToIsometric(gridX, gridY, gridZ, tile));
 
 	Grid3D gridPos(gridX, gridY, gridZ);
+	tile->add<CTransform>(Utils::gridToIsometric(gridPos, tile));
 	tile->add<CGridPosition>(gridPos);
 	m_tileMap[gridPos] = tile;
 
@@ -110,7 +112,6 @@ void Scene_Play::update()
 		sMovement();
 		sCollision();
 		sCamera();
-		sSelect();
 		sAnimation();
 	}
 
@@ -201,18 +202,21 @@ void Scene_Play::sCollision()
 
 void Scene_Play::sSelect()
 {
-	Vec2f selectedGrid = Utils::isometricToGrid(m_mousePos.x, m_mousePos.y, m_gridCellSize);
-	int gridX = static_cast<int>(selectedGrid.x);
-	int gridY = static_cast<int>(selectedGrid.y);
-	int gridZ = 0;
-
-	if (auto selectedTile = m_tileMap[Grid3D(gridX, gridY, gridZ)])
+	static const int heightLimit = 256;
+	for (int gridZ = heightLimit; gridZ >= 0; gridZ--)
 	{
-		if (m_selectedTile)
-			m_selectedTile->get<CState>().state = "unselected";
+		Vec2f selectedGrid = Utils::isometricToGrid(m_mousePos.x, m_mousePos.y, gridZ, m_gridCellSize);
+		Grid3D gridPos(static_cast<int>(selectedGrid.x), static_cast<int>(selectedGrid.y), gridZ);
 
-		m_selectedTile = selectedTile;
-		m_selectedTile->get<CState>().state = "selected";
+		if (auto selectedTile = m_tileMap[gridPos])
+		{
+			if (m_selectedTile)
+				m_selectedTile->get<CState>().state = "unselected";
+
+			m_selectedTile = selectedTile;
+			m_selectedTile->get<CState>().state = "selected";
+			break;
+		}
 	}
 }
 
@@ -236,6 +240,7 @@ void Scene_Play::sDoAction(const Action& action)
 		else if (action.m_name == "LEFT_CLICK")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
+			sSelect();
 		}
 		else if (action.m_name == "RIGHT_CLICK")
 		{
