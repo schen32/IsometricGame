@@ -66,6 +66,7 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p->add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
 	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(0, 0, 0, p));
+	p->add<CGridPosition>(Grid3D(0, 0, 0));
 	p->add<CInput>();
 }
 
@@ -75,7 +76,14 @@ void Scene_Play::spawnTiles(const std::string& filename)
 	{
 		for (int j = 0; j < m_gridSize.y; j++)
 		{
-			spawnTile(i, j, rand() % 3, "SandTile");
+			if (rand() % 2 == 0)
+			{
+				spawnTile(i, j, 8, "SandTile");
+			}
+			else
+			{
+				spawnTile(i, j, 0, "WaterTile");
+			}
 		}
 	}
 }
@@ -85,6 +93,12 @@ void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const std::str
 	auto tile = m_entityManager.addEntity("tile", aniName);
 	tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
 	tile->add<CTransform>(Utils::gridToIsometric(gridX, gridY, gridZ, tile));
+
+	Grid3D gridPos(gridX, gridY, gridZ);
+	tile->add<CGridPosition>(gridPos);
+	m_tileMap[gridPos] = tile;
+
+	tile->add<CState>("unselected");
 }
 
 void Scene_Play::update()
@@ -96,6 +110,7 @@ void Scene_Play::update()
 		sMovement();
 		sCollision();
 		sCamera();
+		sSelect();
 		sAnimation();
 	}
 
@@ -107,7 +122,7 @@ void Scene_Play::update()
 
 void Scene_Play::sMovement()
 {
-	static const float playerSpeed = 1.5f;
+	static const float playerSpeed = 2.0f;
 
 	auto& pInput = player()->get<CInput>();
 	auto& pTransform = player()->get<CTransform>();
@@ -181,6 +196,23 @@ void Scene_Play::sCollision()
 				}
 			}
 		}
+	}
+}
+
+void Scene_Play::sSelect()
+{
+	Vec2f selectedGrid = Utils::isometricToGrid(m_mousePos.x, m_mousePos.y, m_gridCellSize);
+	int gridX = static_cast<int>(selectedGrid.x);
+	int gridY = static_cast<int>(selectedGrid.y);
+	int gridZ = 0;
+
+	if (auto selectedTile = m_tileMap[Grid3D(gridX, gridY, gridZ)])
+	{
+		if (m_selectedTile)
+			m_selectedTile->get<CState>().state = "unselected";
+
+		m_selectedTile = selectedTile;
+		m_selectedTile->get<CState>().state = "selected";
 	}
 }
 
@@ -281,7 +313,14 @@ void Scene_Play::sRender()
 		auto& transform = tile->get<CTransform>();
 		auto& animation = tile->get<CAnimation>().animation;
 
-		animation.m_sprite.setPosition(transform.pos);
+		if (tile->get<CState>().state == "selected")
+		{
+			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
+		}
+		else
+		{
+			animation.m_sprite.setPosition(transform.pos);
+		}
 		window.draw(animation.m_sprite);
 	}
 

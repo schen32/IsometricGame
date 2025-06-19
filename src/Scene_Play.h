@@ -4,8 +4,11 @@
 #include <map>
 #include <memory>
 
+#include "Grid3D.hpp"
 #include "EntityManager.hpp"
 #include "ParticleSystem.hpp"
+
+using TileMap = std::map<Grid3D, std::shared_ptr<Entity>>;
 
 class Scene_Play : public Scene
 {
@@ -18,6 +21,8 @@ protected:
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
 	Vec2f					 m_gridSize = { 32, 32 };
+	TileMap					 m_tileMap;
+	std::shared_ptr<Entity>  m_selectedTile;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -40,6 +45,7 @@ protected:
 	void sCollision();
 	void sCamera();
 	void sGui();
+	void sSelect();
 public:
 
 	Scene_Play() = default;

@@ -74,10 +74,8 @@
     <ClInclude Include="src\Utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="assets\1Biker\Biker_idle.png">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <ClInclude Include="src\Grid3D.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

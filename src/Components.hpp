@@ -4,6 +4,7 @@
 #include "Assets.hpp"
 #include "Vec2.hpp"
 #include "Entity.hpp"
+#include "Grid3D.hpp"
 
 class Entity;
 
@@ -34,12 +35,10 @@ public:
 class CGridPosition : public Component
 {
 public:
-	int x = 0;
-	int y = 0;
-	int z = 0;
+	Grid3D pos = Grid3D(0, 0, 0);
 
 	CGridPosition() = default;
-	CGridPosition(int x, int y, int z): x(x), y(y), z(z) {}
+	CGridPosition(const Grid3D& p): pos(p) {}
 };
 
 class CInput : public Component
