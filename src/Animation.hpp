@@ -25,7 +25,7 @@ public:
 		: Animation(name, t, 1, 1, 1, 1, 0) { }
 	Animation(const std::string& name, const sf::Texture& t,
 		size_t rows, size_t cols, size_t startFrame, size_t frameCount, size_t speed)
-		: m_name(name), m_texture(t), m_sprite(t),
+		: m_name(name), m_sprite(t),
 		m_rows(rows), m_cols(cols),
 		m_startFrame(startFrame), m_frameCount(frameCount),
 		m_currentFrame(0), m_speed(speed)

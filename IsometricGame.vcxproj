@@ -101,6 +101,7 @@
       <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies);opengl32.lib;sfml-audio-d.lib
 ;sfml-system-d.lib;sfml-graphics-d.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\lib;"C:\dev\libaries\SFML-3.0.0\lib";%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -121,6 +122,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sfml-graphics.lib;sfml-window.lib;sfml-system.lib;sfml-audio.lib;%(AdditionalDependencies);opengl32.lib;sfml-system-d.lib;sfml-graphics-d.lib;sfml-window-d.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\lib;"C:\dev\libaries\SFML-3.0.0\lib";%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -138,6 +140,7 @@
       <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies);opengl32.lib;sfml-audio-d.lib
 ;sfml-system-d.lib;sfml-graphics-d.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\lib;"C:\dev\libaries\SFML-3.0.0\lib";%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,6 +161,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sfml-graphics.lib;sfml-window.lib;sfml-system.lib;sfml-audio.lib;%(AdditionalDependencies);opengl32.lib;sfml-system-d.lib;sfml-graphics-d.lib;sfml-window-d.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\lib;"C:\dev\libaries\SFML-3.0.0\lib";%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

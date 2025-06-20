@@ -26,6 +26,7 @@ public:
 	std::vector<std::string>	m_tags;
 	std::vector<std::string>	m_names;
 	std::vector<bool>			m_active;
+	std::vector<size_t>			m_freeIndices;
 
 	MemoryPool(size_t maxEntities) : m_numEntities(0), m_maxEntities(maxEntities)
 	{
@@ -36,6 +37,10 @@ public:
 		m_tags.resize(maxEntities);
 		m_names.resize(maxEntities);
 		m_active.resize(maxEntities);
+		for (size_t i = 0; i < m_maxEntities; i++)
+		{
+			m_freeIndices.push_back(i);
+		}
 	}
 	static MemoryPool& Instance()
 	{
@@ -46,11 +51,13 @@ public:
 
 	size_t getNextEntityIndex()
 	{
-		for (size_t i = 0; i < m_maxEntities; i++)
+		if (m_freeIndices.empty())
 		{
-			if (!isActive(i)) return i;
+			throw std::runtime_error("No more free entity indices!");
 		}
-		return -1;
+		size_t index = m_freeIndices.back();
+		m_freeIndices.pop_back();
+		return index;
 	}
 
 	Entity addEntity(const std::string& tag, const std::string& name);
@@ -97,6 +104,7 @@ public:
 	void destroy(size_t entityId)
 	{
 		m_active[entityId] = false;
+		m_freeIndices.push_back(entityId);
 		m_numEntities--;
 	}
 };
