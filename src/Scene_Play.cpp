@@ -89,15 +89,22 @@ void Scene_Play::spawnTiles(const std::string& filename)
 
 			std::cout << i << " " << j << " " << height << std::endl;
 
-			const static size_t waterLevel = 4;
-			const static size_t grassLevel = 6;
-			spawnTile(i, j, waterLevel - 1, "WaterTile");
-			for (size_t k = waterLevel; k <= height; k++)
+			const static size_t waterLevel = 8;
+			const static size_t grassLevel = 12;
+			for (size_t k = height - 3; k <= height; k++)
 			{
-				if (k < grassLevel)
+				if (k <= waterLevel)
+				{
+					spawnTile(i, j, k, "WaterTile");
+				}
+				else if (waterLevel < k && k < grassLevel)
+				{
 					spawnTile(i, j, k, "GroundTile");
-				else
+				}
+				else if (grassLevel <= k)
+				{
 					spawnTile(i, j, k, "GrassTile");
+				}
 			}
 		}
 	}
