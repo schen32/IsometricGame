@@ -7,6 +7,7 @@
 #include "Action.hpp"
 #include "ParticleSystem.hpp"
 #include "Utils.hpp"
+#include "PerlinNoise.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -74,21 +75,25 @@ void Scene_Play::spawnPlayer()
 
 void Scene_Play::spawnTiles(const std::string& filename)
 {
-	int halfZ = m_gridSize3D.z / 2;
-	for (int i = 0; i < m_gridSize3D.x; i++)
+	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(m_gridSize3D.x, m_gridSize3D.y);
+	const static int octaveCount = 4;
+	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, octaveCount);
+
+	for (size_t i = 0; i < perlinNoise.size(); ++i)
 	{
-		for (int j = 0; j < m_gridSize3D.y; j++)
+		for (size_t j = 0; j < perlinNoise[i].size(); ++j)
 		{
-			for (int k = 0; k < m_gridSize3D.z; k++)
+			float noiseValue = perlinNoise[i][j];
+			float height = std::round(noiseValue * m_gridSize3D.z);
+
+			for (size_t k = 0; k < height; k++)
 			{
-				if (k < halfZ)
-				{
-					spawnTile(i, j, k, "WaterTile");
-				}
+				std::string aniName = "";
+				if (k > 4.0f)
+					aniName = "SandTile";
 				else
-				{
-					spawnTile(i, j, k, "SandTile");
-				}
+					aniName = "WaterTile";
+				spawnTile(i, j, k, aniName);
 			}
 		}
 	}
