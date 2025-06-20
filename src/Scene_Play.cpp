@@ -77,7 +77,7 @@ void Scene_Play::spawnPlayer()
 void Scene_Play::spawnTiles(const std::string& filename)
 {
 	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(m_gridSize3D.x, m_gridSize3D.y);
-	const static int octaveCount = 4;
+	const static int octaveCount = 6;
 	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, octaveCount);
 
 	auto& waterAni = m_game->assets().getAnimation("WaterTile");
@@ -91,8 +91,8 @@ void Scene_Play::spawnTiles(const std::string& filename)
 			float noiseValue = perlinNoise[i][j];
 			float height = std::round(noiseValue * m_gridSize3D.z);
 
-			const static size_t waterLevel = 8;
-			const static size_t grassLevel = 12;
+			const static size_t waterLevel = 20;
+			const static size_t grassLevel = 24;
 			for (size_t k = height - 5; k <= height; k++)
 			{
 				if (k <= waterLevel)
@@ -189,12 +189,14 @@ void Scene_Play::sStatus()
 void Scene_Play::sCollision()
 {
 	auto& pTransform = player().get<CTransform>();
+	auto visibleArea = Utils::visibleArea(m_cameraView);
+
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
 		if (player().id() == tile.id())
 			continue;
 
-		if (!Utils::isVisible(tile, m_cameraView)) continue;
+		if (!Utils::isVisible(tile, visibleArea)) continue;
 
 		auto overlap = Physics::GetOverlap(player(), tile);
 		if (overlap.x > 0 && overlap.y > 0)
@@ -223,9 +225,11 @@ void Scene_Play::sCollision()
 
 void Scene_Play::sSelect()
 {
+	auto visibleArea = Utils::visibleArea(m_cameraView);
+
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, m_cameraView)) continue;
+		if (!Utils::isVisible(tile, visibleArea)) continue;
 
 		auto& tileState = tile.get<CState>().state;
 		bool insideTile = Utils::isInsideTopFace(m_mousePos, tile);
@@ -288,9 +292,10 @@ void Scene_Play::sDoAction(const Action& action)
 
 void Scene_Play::sAnimation()
 {
+	auto visibleArea = Utils::visibleArea(m_cameraView);
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, m_cameraView)) continue;
+		if (!Utils::isVisible(tile, visibleArea)) continue;
 
 		auto& transform = tile.get<CTransform>();
 		auto& animation = tile.get<CAnimation>().animation;
@@ -341,9 +346,10 @@ void Scene_Play::sRender()
 	sf::Color clearColor = sf::Color(204, 226, 225);
 	window.clear(clearColor);
 
+	auto visibleArea = Utils::visibleArea(m_cameraView);
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, m_cameraView)) continue;
+		if (!Utils::isVisible(tile, visibleArea)) continue;
 		if (Utils::isBehindAnotherTile(tile, m_tileMap)) continue;
 
 		auto& animation = tile.get<CAnimation>().animation;

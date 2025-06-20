@@ -20,7 +20,7 @@ protected:
 	bool					 m_playerDied = false;
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
-	Grid3D   				 m_gridSize3D = { 200, 200, 20 };
+	Grid3D   				 m_gridSize3D = { 200, 200, 50 };
 	TileMap					 m_tileMap;
 	Entity  m_selectedTile;
 
