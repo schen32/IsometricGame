@@ -90,11 +90,11 @@ void Scene_Play::spawnTiles(const std::string& filename)
 			std::cout << i << " " << j << " " << height << std::endl;
 
 			const static size_t waterLevel = 4;
-			const static size_t sandLevel = 6;
-			spawnTile(i, j, waterLevel - 1, "IceTile");
+			const static size_t grassLevel = 6;
+			spawnTile(i, j, waterLevel - 1, "WaterTile");
 			for (size_t k = waterLevel; k <= height; k++)
 			{
-				if (k < sandLevel)
+				if (k < grassLevel)
 					spawnTile(i, j, k, "GroundTile");
 				else
 					spawnTile(i, j, k, "GrassTile");
@@ -290,6 +290,7 @@ void Scene_Play::sAnimation()
 			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
 		else
 			animation.m_sprite.setPosition(transform.pos);
+		animation.update();
 	}
 
 	auto& transform = player().get<CTransform>();
