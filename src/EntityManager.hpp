@@ -1,17 +1,18 @@
 #pragma once
 
 #include "Entity.hpp"
+#include "MemoryPool.hpp"
 #include <vector>
 #include <unordered_map>
 
-using EntityVec = std::vector<std::shared_ptr<Entity>>;
+using EntityVec = std::vector<Entity>;
 
 class EntityManager
 {
+public:
 	EntityVec m_entities;
 	EntityVec m_entitiesToAdd;
 	std::unordered_map<std::string, EntityVec> m_entityMap;
-	size_t m_totalEntities = 0;
 
 	void removeDeadEntities(EntityVec& vec)
 	{
@@ -20,16 +21,15 @@ class EntityManager
 			(
 				vec.begin(),
 				vec.end(),
-				[](const std::shared_ptr<Entity> entity)
+				[](Entity entity)
 				{
-					return !entity->isActive();
+					return !entity.isActive();
 				}
 			),
 			vec.end()
 		);
 	}
 
-public:
 	EntityManager() = default;
 
 	void update()
@@ -37,7 +37,8 @@ public:
 		for (auto& entity : m_entitiesToAdd)
 		{
 			m_entities.push_back(entity);
-			m_entityMap[entity->tag()].push_back(entity);
+			auto& entityTag = entity.tag();
+			m_entityMap[entityTag].push_back(entity);
 		}
 		m_entitiesToAdd.clear();
 
@@ -48,27 +49,26 @@ public:
 		}
 	}
 
-	std::shared_ptr<Entity> addEntity(const std::string& tag, const std::string& name)
+	Entity addEntity(const std::string& tag, const std::string& name)
 	{
-		auto entity = std::shared_ptr<Entity>(new Entity(tag, name, m_totalEntities++));
-		// auto entity = std::make_shared<Entity>(tag, m_totalEntities++);
+		auto entity = MemoryPool::Instance().addEntity(tag, name);
 		m_entitiesToAdd.push_back(entity);
 		return entity;
 	}
 
-	const EntityVec& getEntities()
+	EntityVec& getEntities()
 	{
 		return m_entities;
 	}
 
-	const EntityVec& getEntities(const std::string& tag)
+	EntityVec& getEntities(const std::string& tag)
 	{
 		if (m_entityMap.find(tag) == m_entityMap.end())
 			m_entityMap[tag] = EntityVec();
 		return m_entityMap[tag];
 	}
 
-	const std::unordered_map<std::string, EntityVec>& getEntityMap()
+	std::unordered_map<std::string, EntityVec>& getEntityMap()
 	{
 		return m_entityMap;
 	}

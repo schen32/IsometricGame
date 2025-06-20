@@ -38,7 +38,7 @@ void Scene_Play::init(const std::string& levelPath)
 	registerKeyAction(sf::Keyboard::Scan::Down, "DOWN");
 
 	m_cameraView.setSize(sf::Vector2f(width(), height()));
-	m_cameraView.zoom(0.5f);
+	m_cameraView.zoom(1.0f);
 	m_game->window().setView(m_cameraView);
 
 	loadLevel(levelPath);
@@ -47,12 +47,12 @@ void Scene_Play::init(const std::string& levelPath)
 void Scene_Play::loadLevel(const std::string& filename)
 {
 	m_entityManager = EntityManager();
-	spawnTiles(filename);
 	spawnPlayer();
+	spawnTiles(filename);
 	m_entityManager.update();
 }
 
-std::shared_ptr<Entity> Scene_Play::player()
+Entity Scene_Play::player()
 {
 	auto& player = m_entityManager.getEntities("player");
 	assert(player.size() == 1);
@@ -64,12 +64,12 @@ void Scene_Play::spawnPlayer()
 	auto p = m_entityManager.addEntity("player", "playerCharacter");
 	m_playerDied = false;
 	
-	auto& pAnimation = p->add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
+	auto& pAnimation = p.add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
 
 	Grid3D gridPos(0, 0, 0);
-	auto& pTransform = p->add<CTransform>(Utils::gridToIsometric(gridPos, p));
-	p->add<CGridPosition>(gridPos);
-	p->add<CInput>();
+	auto& pTransform = p.add<CTransform>(Utils::gridToIsometric(gridPos, p));
+	p.add<CGridPosition>(gridPos);
+	p.add<CInput>();
 }
 
 void Scene_Play::spawnTiles(const std::string& filename)
@@ -93,14 +93,14 @@ void Scene_Play::spawnTiles(const std::string& filename)
 void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const std::string& aniName)
 {
 	auto tile = m_entityManager.addEntity("tile", aniName);
-	tile->add<CAnimation>(m_game->assets().getAnimation(aniName), true);
+	tile.add<CAnimation>(m_game->assets().getAnimation(aniName), true);
 
 	Grid3D gridPos(gridX, gridY, gridZ);
-	tile->add<CTransform>(Utils::gridToIsometric(gridPos, tile));
-	tile->add<CGridPosition>(gridPos);
+	tile.add<CTransform>(Utils::gridToIsometric(gridPos, tile));
+	tile.add<CGridPosition>(gridPos);
 	m_tileMap[gridPos] = tile;
 
-	tile->add<CState>("unselected");
+	tile.add<CState>("unselected");
 }
 
 void Scene_Play::update()
@@ -125,8 +125,8 @@ void Scene_Play::sMovement()
 {
 	static const float playerSpeed = 2.0f;
 
-	auto& pInput = player()->get<CInput>();
-	auto& pTransform = player()->get<CTransform>();
+	auto& pInput = player().get<CInput>();
+	auto& pTransform = player().get<CTransform>();
 
 	pTransform.velocity = { 0.f, 0.f };
 
@@ -138,16 +138,16 @@ void Scene_Play::sMovement()
 	// Normalize if necessary
 	if (pTransform.velocity.x != 0.f || pTransform.velocity.y != 0.f)
 	{
-		player()->get<CState>().state = "running";
+		player().get<CState>().state = "running";
 		pTransform.velocity = pTransform.velocity.normalize() * playerSpeed;
 	}
 	else
-		player()->get<CState>().state = "idle";
+		player().get<CState>().state = "idle";
 
 
 	for (auto& entity : m_entityManager.getEntities())
 	{
-		auto& eTransform = entity->get<CTransform>();
+		auto& eTransform = entity.get<CTransform>();
 
 		eTransform.prevPos = eTransform.pos;
 		eTransform.pos += eTransform.velocity;
@@ -166,10 +166,10 @@ void Scene_Play::sStatus()
 
 void Scene_Play::sCollision()
 {
-	auto& pTransform = player()->get<CTransform>();
+	auto& pTransform = player().get<CTransform>();
 	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
-		if (player()->id() == tile->id())
+		if (player().id() == tile.id())
 			continue;
 
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
@@ -177,7 +177,7 @@ void Scene_Play::sCollision()
 		auto overlap = Physics::GetOverlap(player(), tile);
 		if (overlap.x > 0 && overlap.y > 0)
 		{
-			auto& tileTransform = tile->get<CTransform>();
+			auto& tileTransform = tile.get<CTransform>();
 			Vec2f prevOverlap = Physics::GetPreviousOverlap(player(), tile);
 			if (prevOverlap.x > 0)
 			{
@@ -205,7 +205,7 @@ void Scene_Play::sSelect()
 	{
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
-		auto& tileState = tile->get<CState>().state;
+		auto& tileState = tile.get<CState>().state;
 		bool insideTile = Utils::isInsideTopFace(m_mousePos, tile);
 		if (insideTile && tileState != "selected")
 			tileState = "selected";
@@ -216,7 +216,7 @@ void Scene_Play::sSelect()
 
 void Scene_Play::sDoAction(const Action& action)
 {
-	auto& pInput = player()->get<CInput>();
+	auto& pInput = player().get<CInput>();
 	if (action.m_type == "START")
 	{
 		if (action.m_name == "LEFT")
@@ -260,27 +260,27 @@ void Scene_Play::sDoAction(const Action& action)
 
 void Scene_Play::sAnimation()
 {
-	for (auto& entity : m_entityManager.getEntities())
+	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
-		if (!entity->has<CAnimation>())
-			continue;
+		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
-		if (!Utils::isVisible(entity, m_cameraView)) continue;
+		auto& transform = tile.get<CTransform>();
+		auto& animation = tile.get<CAnimation>().animation;
 
-		auto& eAnimation = entity->get<CAnimation>();
-		eAnimation.animation.update();
-
-		if (!eAnimation.repeat && eAnimation.animation.hasEnded())
-		{
-			entity->destroy();
-			continue;
-		}
+		if (tile.get<CState>().state == "selected")
+			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
+		else
+			animation.m_sprite.setPosition(transform.pos);
 	}
+
+	auto& transform = player().get<CTransform>();
+	auto& animation = player().get<CAnimation>().animation;
+	animation.m_sprite.setPosition(transform.pos);
 }
 
 void Scene_Play::sCamera()
 {
-	auto& pTransform = player()->get<CTransform>();
+	auto& pTransform = player().get<CTransform>();
 	m_cameraView.setCenter(pTransform.pos);
 	m_game->window().setView(m_cameraView);
 }
@@ -309,29 +309,17 @@ void Scene_Play::sGui()
 void Scene_Play::sRender()
 {
 	auto& window = m_game->window();
-	window.clear(sf::Color(204, 226, 225));
+	sf::Color clearColor = sf::Color(204, 226, 225);
+	window.clear(clearColor);
 
 	for (auto& tile : m_entityManager.getEntities("tile"))
 	{
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
-		auto& transform = tile->get<CTransform>();
-		auto& animation = tile->get<CAnimation>().animation;
-
-		if (tile->get<CState>().state == "selected")
-		{
-			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
-		}
-		else
-		{
-			animation.m_sprite.setPosition(transform.pos);
-		}
+		auto& animation = tile.get<CAnimation>().animation;
 		window.draw(animation.m_sprite);
 	}
 
-	auto& transform = player()->get<CTransform>();
-	auto& animation = player()->get<CAnimation>().animation;
-
-	animation.m_sprite.setPosition(transform.pos);
+	auto& animation = player().get<CAnimation>().animation;
 	window.draw(animation.m_sprite);
 }

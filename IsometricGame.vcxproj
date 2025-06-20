@@ -161,6 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\MemoryPool.cpp" />
     <ClCompile Include="src\Scene_Menu.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\GameEngine.cpp" />
@@ -169,6 +170,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Grid3D.hpp" />
+    <ClInclude Include="src\MemoryPool.hpp" />
     <ClInclude Include="src\ParticleSystem.hpp" />
     <ClInclude Include="src\Scene_Play.h" />
     <ClInclude Include="src\Scene.h" />

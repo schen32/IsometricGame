@@ -1,92 +1,63 @@
 #pragma once
 
 #include "Components.hpp"
+#include "MemoryPool.hpp"
 #include <string>
-#include <tuple>
-
-class EntityManager;
-
-using ComponentTuple = std::tuple<
-	CTransform,
-	CGridPosition,
-	CInput,
-	CBoundingBox,
-	CAnimation,
-	CState,
-	CHealth,
-	CDamage
->;
 
 class Entity
 {
-	friend class EntityManager;
-
-	ComponentTuple m_components;
-	bool m_active = true;
+public:
 	size_t m_id = 0;
 
-	Entity(const std::string& tag, const std::string& name, const size_t& id)
-		: m_tag(tag), m_name(name), m_id(id) {}
+	Entity() = default;
+	Entity(size_t id) : m_id(id) {}
 
-public:
-	std::string m_tag = "default";
-	std::string m_name = "name";
-
-	bool isActive() const
+	bool isActive()
 	{
-		return m_active;
+		return MemoryPool::Instance().isActive(m_id);
 	}
 
 	void destroy()
 	{
-		m_active = false;
+		MemoryPool::Instance().destroy(m_id);
 	}
 
-	size_t id() const
+	size_t id()
 	{
 		return m_id;
 	}
 
-	const std::string& tag() const
+	std::string& tag()
 	{
-		return m_tag;
+		return MemoryPool::Instance().tag(m_id);
 	}
 
-	const std::string& name() const
+	std::string& name()
 	{
-		return m_name;
+		return MemoryPool::Instance().name(m_id);
 	}
 
 	template <typename T>
-	bool has() const
+	bool has()
 	{
-		return get<T>().exists;
+		return MemoryPool::Instance().has<T>(m_id);
 	}
 
 	template <typename T, typename... TArgs>
 	T& add(TArgs&&... mArgs)
 	{
-		auto& component = get<T>();
-		component = T(std::forward<TArgs>(mArgs)...);
-		component.exists = true;
-		return component;
+		return MemoryPool::Instance().add<T>(m_id, std::forward<TArgs>(mArgs)...);
 	}
 
 	template <typename T>
 	T& get()
 	{
-		return std::get<T>(m_components);
-	}
-
-	template <typename T>
-	const T& get() const
-	{
-		return std::get<T>(m_components);
+		return MemoryPool::Instance().get<T>(m_id);
 	}
 
 	template <typename T>
 	void remove()
 	{
-		get<T>() = T();
+		MemoryPool::Instance().remove<T>(m_id);
 	}
 };

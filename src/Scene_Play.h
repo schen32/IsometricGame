@@ -8,7 +8,7 @@
 #include "EntityManager.hpp"
 #include "ParticleSystem.hpp"
 
-using TileMap = std::map<Grid3D, std::shared_ptr<Entity>>;
+using TileMap = std::map<Grid3D, Entity>;
 
 class Scene_Play : public Scene
 {
@@ -22,7 +22,7 @@ protected:
 	Vec2f					 m_gridCellSize = { 32, 32 };
 	Vec2f					 m_gridSize = { 128, 128 };
 	TileMap					 m_tileMap;
-	std::shared_ptr<Entity>  m_selectedTile;
+	Entity  m_selectedTile;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -35,7 +35,7 @@ protected:
 	void spawnTiles(const std::string& filename);
 	void spawnTile(float gridX, float gridY, float gridZ, const std::string& aniName);
 
-	std::shared_ptr<Entity> player();
+	Entity player();
 	void sDoAction(const Action& action);
 
 	void sMovement();

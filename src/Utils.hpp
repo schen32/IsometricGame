@@ -10,23 +10,23 @@ class Utils
 public:
 	Utils() = default;
 
-	static bool isVisible(std::shared_ptr<Entity> entity, const sf::View& cameraView)
+	static bool isVisible(Entity entity, const sf::View& cameraView)
 	{
 		const float padding = 128.0f;
 		sf::Vector2f viewCenter = cameraView.getCenter();
 		sf::Vector2f viewSize = cameraView.getSize() + sf::Vector2f(padding, padding);
 		sf::FloatRect visibleArea(viewCenter - viewSize / 2.f, viewSize);
 
-		auto& pos = entity->get<CTransform>().pos;
+		auto& pos = entity.get<CTransform>().pos;
 		return visibleArea.contains(pos);
 	}
 
-	bool static isInsideTopFace(const Vec2f& pos, std::shared_ptr<Entity> entity)
+	bool static isInsideTopFace(const Vec2f& pos, Entity entity)
 	{
-		auto eTransform = entity->get<CTransform>();
+		auto eTransform = entity.get<CTransform>();
 		Vec2f spriteCenter = eTransform.pos; // center of entire sprite
 		Vec2f scale = eTransform.scale;
-		Vec2f size = entity->get<CAnimation>().animation.m_size;
+		Vec2f size = entity.get<CAnimation>().animation.m_size;
 
 		// Apply scale
 		size.x *= scale.x;
@@ -46,13 +46,13 @@ public:
 		return (dx / halfWidth + dy / halfHeight) <= 1.0f;
 	}
 
-	bool static isInside(const Vec2f& point, const std::shared_ptr<Entity>& entity)
+	bool static isInside(const Vec2f& point, Entity entity)
 	{
-		const auto& transform = entity->get<CTransform>();
+		const auto& transform = entity.get<CTransform>();
 		const Vec2f& center = transform.pos;
 		const Vec2f& scale = transform.scale;
 
-		Vec2f size = entity->get<CAnimation>().animation.m_size;
+		Vec2f size = entity.get<CAnimation>().animation.m_size;
 		size.x *= scale.x;
 		size.y *= scale.y;
 
@@ -65,9 +65,9 @@ public:
 			point.y >= top && point.y <= bottom);
 	}
 
-	Vec2f static gridToIsometric(Grid3D gridPos, std::shared_ptr<Entity> entity)
+	Vec2f static gridToIsometric(Grid3D gridPos, Entity entity)
 	{
-		auto& eAnimation = entity->get<CAnimation>();
+		auto& eAnimation = entity.get<CAnimation>();
 		Vec2f eSize = eAnimation.animation.m_size;
 
 		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);

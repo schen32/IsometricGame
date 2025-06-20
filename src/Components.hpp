@@ -3,10 +3,7 @@
 #include "Animation.hpp"
 #include "Assets.hpp"
 #include "Vec2.hpp"
-#include "Entity.hpp"
 #include "Grid3D.hpp"
-
-class Entity;
 
 class Component
 {
