@@ -14,6 +14,7 @@
 #include <string>
 #include <cmath>
 #include <math.h>
+#include <algorithm>
 
 Scene_Play::Scene_Play(GameEngine* gameEngine, const std::string& levelPath)
 	: Scene(gameEngine)
@@ -86,14 +87,16 @@ void Scene_Play::spawnTiles(const std::string& filename)
 			float noiseValue = perlinNoise[i][j];
 			float height = std::round(noiseValue * m_gridSize3D.z);
 
-			for (size_t k = 0; k < height; k++)
+			std::cout << i << " " << j << " " << height << std::endl;
+
+			const static size_t waterLevel = 4;
+			for (size_t k = 0; k < waterLevel; k++)
 			{
-				std::string aniName = "";
-				if (k > 4.0f)
-					aniName = "SandTile";
-				else
-					aniName = "WaterTile";
-				spawnTile(i, j, k, aniName);
+				spawnTile(i, j, k, "WaterTile");
+			}
+			for (size_t k = waterLevel; k < height; k++)
+			{
+				spawnTile(i, j, k, "SandTile");
 			}
 		}
 	}
