@@ -21,6 +21,7 @@ protected:
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
 	Vec2f					 m_gridSize = { 64, 64 };
+	Grid3D   				 m_gridSize3D = { 64, 64, 16 };
 	TileMap					 m_tileMap;
 	Entity  m_selectedTile;
 

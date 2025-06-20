@@ -17,4 +17,14 @@ public:
 	bool operator==(const Grid3D& other) const {
 		return x == other.x && y == other.y && z == other.z;
 	}
+
+	Grid3D operator+(const Grid3D& other) const {
+		return Grid3D(x + other.x, y + other.y, z + other.z);
+	}
+
+	void operator +=(const Grid3D& other) {
+		x += other.x;
+		y += other.y;
+		z += other.z;
+	}
 };

@@ -10,6 +10,14 @@ class Utils
 public:
 	Utils() = default;
 
+	static bool isBehindAnotherTile(Entity tile, const TileMap& tileMap)
+	{
+		auto& gridPos = tile.get<CGridPosition>().pos;
+		if (tileMap.find(gridPos + Grid3D(1, 1, 1)) == tileMap.end())
+			return false;
+		return true;
+	}
+
 	static bool isVisible(Entity entity, const sf::View& cameraView)
 	{
 		const float padding = 128.0f;

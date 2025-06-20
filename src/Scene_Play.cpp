@@ -74,17 +74,21 @@ void Scene_Play::spawnPlayer()
 
 void Scene_Play::spawnTiles(const std::string& filename)
 {
-	for (int i = 0; i < m_gridSize.x; i++)
+	int halfZ = m_gridSize3D.z / 2;
+	for (int i = 0; i < m_gridSize3D.x; i++)
 	{
-		for (int j = 0; j < m_gridSize.y; j++)
+		for (int j = 0; j < m_gridSize3D.y; j++)
 		{
-			if (rand() % 2 == 0)
+			for (int k = 0; k < m_gridSize3D.z; k++)
 			{
-				spawnTile(i, j, 8, "SandTile");
-			}
-			else
-			{
-				spawnTile(i, j, 0, "WaterTile");
+				if (k < halfZ)
+				{
+					spawnTile(i, j, k, "WaterTile");
+				}
+				else
+				{
+					spawnTile(i, j, k, "SandTile");
+				}
 			}
 		}
 	}
@@ -321,6 +325,7 @@ void Scene_Play::sRender()
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
+		if (Utils::isBehindAnotherTile(tile, m_tileMap)) continue;
 
 		auto& animation = tile.get<CAnimation>().animation;
 		window.draw(animation.m_sprite);
