@@ -80,6 +80,10 @@ void Scene_Play::spawnTiles(const std::string& filename)
 	const static int octaveCount = 4;
 	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, octaveCount);
 
+	auto& waterAni = m_game->assets().getAnimation("WaterTile");
+	auto& groundAni = m_game->assets().getAnimation("GroundTile");
+	auto& grassAni = m_game->assets().getAnimation("GrassTile");
+
 	for (size_t i = 0; i < perlinNoise.size(); ++i)
 	{
 		for (size_t j = 0; j < perlinNoise[i].size(); ++j)
@@ -87,33 +91,31 @@ void Scene_Play::spawnTiles(const std::string& filename)
 			float noiseValue = perlinNoise[i][j];
 			float height = std::round(noiseValue * m_gridSize3D.z);
 
-			std::cout << i << " " << j << " " << height << std::endl;
-
 			const static size_t waterLevel = 8;
 			const static size_t grassLevel = 12;
-			for (size_t k = height - 3; k <= height; k++)
+			for (size_t k = height - 5; k <= height; k++)
 			{
 				if (k <= waterLevel)
 				{
-					spawnTile(i, j, k, "WaterTile");
+					spawnTile(i, j, k, waterAni);
 				}
 				else if (waterLevel < k && k < grassLevel)
 				{
-					spawnTile(i, j, k, "GroundTile");
+					spawnTile(i, j, k, groundAni);
 				}
 				else if (grassLevel <= k)
 				{
-					spawnTile(i, j, k, "GrassTile");
+					spawnTile(i, j, k, grassAni);
 				}
 			}
 		}
 	}
 }
 
-void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const std::string& aniName)
+void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const Animation& animation)
 {
-	auto tile = m_entityManager.addEntity("tile", aniName);
-	tile.add<CAnimation>(m_game->assets().getAnimation(aniName), true);
+	auto tile = m_entityManager.addEntity("tile", animation.m_name);
+	tile.add<CAnimation>(animation, true);
 
 	Grid3D gridPos(gridX, gridY, gridZ);
 	tile.add<CTransform>(Utils::gridToIsometric(gridPos, tile));

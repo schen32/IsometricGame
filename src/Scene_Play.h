@@ -20,7 +20,7 @@ protected:
 	bool					 m_playerDied = false;
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
-	Grid3D   				 m_gridSize3D = { 100, 100, 20 };
+	Grid3D   				 m_gridSize3D = { 200, 200, 20 };
 	TileMap					 m_tileMap;
 	Entity  m_selectedTile;
 
@@ -33,7 +33,7 @@ protected:
 	void update();
 	void spawnPlayer();
 	void spawnTiles(const std::string& filename);
-	void spawnTile(float gridX, float gridY, float gridZ, const std::string& aniName);
+	void spawnTile(float gridX, float gridY, float gridZ, const Animation& animation);
 
 	Entity player();
 	void sDoAction(const Action& action);

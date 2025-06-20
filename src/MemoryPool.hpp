@@ -44,7 +44,7 @@ public:
 	}
 	static MemoryPool& Instance()
 	{
-		const static size_t MAX_ENTITIES = 512 * 512;
+		const static size_t MAX_ENTITIES = 1024 * 1024;
 		static MemoryPool pool(MAX_ENTITIES);
 		return pool;
 	}
