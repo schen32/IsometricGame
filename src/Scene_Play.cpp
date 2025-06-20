@@ -244,6 +244,12 @@ void Scene_Play::sDoAction(const Action& action)
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
 		}
+		else if (action.m_name == "MOUSE_SCROLL")
+		{
+			float zoomFactor = action.m_mouseScrollDelta > 0 ? 0.9f : 1.1f;
+			m_cameraView.zoom(zoomFactor);
+			m_game->window().setView(m_cameraView);
+		}
 	}
 	else if (action.m_type == "END")
 	{

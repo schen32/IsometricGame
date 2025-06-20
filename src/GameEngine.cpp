@@ -149,6 +149,11 @@ void GameEngine::sUserInput()
 		{
 			currentScene()->doAction(Action("MOUSE_MOVE", "START", mouseMoved->position));
 		}
+
+		if (const auto* mouseWheelScrolled = event->getIf<sf::Event::MouseWheelScrolled>())
+		{
+			currentScene()->doAction(Action("MOUSE_SCROLL", "START", mouseWheelScrolled->delta));
+		}
 	}
 }
 
