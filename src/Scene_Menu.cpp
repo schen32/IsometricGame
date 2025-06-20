@@ -54,7 +54,7 @@ void Scene_Menu::update()
 
 void Scene_Menu::sHover()
 {
-	for (auto& button : m_entityManager.getEntities("button"))
+	for (Entity button : m_entityManager.getEntities("button"))
 	{
 		auto& buttonState = button.get<CState>().state;
 		if (Utils::isInside(m_mousePos, button))
@@ -66,7 +66,7 @@ void Scene_Menu::sHover()
 
 void Scene_Menu::sAnimation()
 {
-	for (auto& button : m_entityManager.getEntities("button"))
+	for (Entity button : m_entityManager.getEntities("button"))
 	{
 		auto& buttonState = button.get<CState>().state;
 		auto& buttonAnimation = button.get<CAnimation>().animation;
@@ -101,7 +101,7 @@ void Scene_Menu::onEnterScene()
 
 void Scene_Menu::select()
 {
-	for (auto& button : m_entityManager.getEntities("button"))
+	for (Entity button : m_entityManager.getEntities("button"))
 	{
 		if (!Utils::isInside(m_mousePos, button)) continue;
 
@@ -135,7 +135,7 @@ void Scene_Menu::sRender()
     auto& window = m_game->window();
 	window.clear(sf::Color(204, 226, 225));
     
-	for (auto& entity : m_entityManager.getEntities())
+	for (Entity entity : m_entityManager.getEntities())
 	{
 		if (!entity.has<CAnimation>()) continue;
 

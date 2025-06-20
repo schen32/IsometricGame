@@ -145,7 +145,7 @@ void Scene_Play::sMovement()
 		player().get<CState>().state = "idle";
 
 
-	for (auto& entity : m_entityManager.getEntities())
+	for (Entity entity : m_entityManager.getEntities())
 	{
 		auto& eTransform = entity.get<CTransform>();
 
@@ -167,7 +167,7 @@ void Scene_Play::sStatus()
 void Scene_Play::sCollision()
 {
 	auto& pTransform = player().get<CTransform>();
-	for (auto& tile : m_entityManager.getEntities("tile"))
+	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
 		if (player().id() == tile.id())
 			continue;
@@ -201,7 +201,7 @@ void Scene_Play::sCollision()
 
 void Scene_Play::sSelect()
 {
-	for (auto& tile : m_entityManager.getEntities("tile"))
+	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
@@ -266,7 +266,7 @@ void Scene_Play::sDoAction(const Action& action)
 
 void Scene_Play::sAnimation()
 {
-	for (auto& tile : m_entityManager.getEntities("tile"))
+	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
@@ -318,7 +318,7 @@ void Scene_Play::sRender()
 	sf::Color clearColor = sf::Color(204, 226, 225);
 	window.clear(clearColor);
 
-	for (auto& tile : m_entityManager.getEntities("tile"))
+	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
 		if (!Utils::isVisible(tile, m_cameraView)) continue;
 
