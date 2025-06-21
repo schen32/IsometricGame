@@ -350,7 +350,6 @@ sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, cons
 	for (size_t i = 0; i < tiles.size(); ++i)
 	{
 		Entity& tile = tiles[i];
-		auto& transform = tile.get<CTransform>(m_memoryPool);
 		auto& tileInfo = tile.get<CTileRenderInfo>(m_memoryPool);
 
 		const sf::Vector2f& pos = tileInfo.position;

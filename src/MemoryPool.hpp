@@ -5,17 +5,17 @@
 #include "Components.hpp"
 
 using ComponentVectorTuple = std::tuple<
-	std::vector<CTransform>,
-	std::vector<CGridPosition>,
-	std::vector<CTileChunk>,
-	std::vector<CTileRenderInfo>,
-	std::vector<CVertexArray>,
-	std::vector<CInput>,
-	std::vector<CBoundingBox>,
-	std::vector<CAnimation>,
-	std::vector<CState>,
-	std::vector<CHealth>,
-	std::vector<CDamage>
+	std::vector<std::optional<CTransform>>,
+	std::vector<std::optional<CGridPosition>>,
+	std::vector<std::optional<CTileChunk>>,
+	std::vector<std::optional<CTileRenderInfo>>,
+	std::vector<std::optional<CVertexArray>>,
+	std::vector<std::optional<CInput>>,
+	std::vector<std::optional<CBoundingBox>>,
+	std::vector<std::optional<CAnimation>>,
+	std::vector<std::optional<CState>>,
+	std::vector<std::optional<CHealth>>,
+	std::vector<std::optional<CDamage>>
 >;
 
 class Entity;
@@ -53,28 +53,32 @@ public:
 	template <typename T>
 	T& get(size_t entityId)
 	{
-		return std::get<std::vector<T>>(m_pool)[entityId];
+		auto& opt = std::get<std::vector<std::optional<T>>>(m_pool)[entityId];
+		if (!opt.has_value())
+			throw std::runtime_error("Component not found for entity " + std::to_string(entityId));
+		return *opt;
 	}
 
 	template <typename T>
 	bool has(size_t entityId)
 	{
-		return get<T>(entityId).exists;
+		auto& opt = std::get<std::vector<std::optional<T>>>(m_pool)[entityId];
+		return opt.has_value();
 	}
 
 	template <typename T, typename... TArgs>
 	T& add(size_t entityId, TArgs&&... mArgs)
 	{
-		auto& component = get<T>(entityId);
-		component = T(std::forward<TArgs>(mArgs)...);
-		component.exists = true;
-		return component;
+		auto& opt = std::get<std::vector<std::optional<T>>>(m_pool)[entityId];
+		opt.emplace(std::forward<TArgs>(mArgs)...);
+		return *opt;
 	}
 
 	template <typename T>
 	void remove(size_t entityId)
 	{
-		get<T>(entityId).exists = false;
+		auto& opt = std::get<std::vector<std::optional<T>>>(m_pool)[entityId];
+		opt.reset();
 	}
 
 	std::string& tag(size_t entityId)

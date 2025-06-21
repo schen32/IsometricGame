@@ -14,19 +14,16 @@ size_t MemoryPool::getNextEntityIndex()
 
 Entity MemoryPool::addEntity(const std::string& tag, const std::string& name)
 {
-	// this doesn't work
-	//size_t index = getNextEntityIndex();
-
-	size_t index = m_freeIndices.back();
-	m_freeIndices.pop_back();
+	size_t index = getNextEntityIndex();
 
 	std::apply([&](auto&... componentVecs) {
-		(..., (componentVecs[index].exists = false));
+		(..., componentVecs[index].reset());
 		}, m_pool);
 
 	m_tags[index] = tag;
 	m_names[index] = name;
 	m_active[index] = true;
 	m_numEntities++;
+
 	return Entity(index);
 }

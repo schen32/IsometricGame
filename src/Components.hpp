@@ -7,13 +7,7 @@
 
 class Entity;
 
-class Component
-{
-public:
-	bool exists = false;
-};
-
-class CTransform : public Component
+class CTransform
 {
 public:
 	Vec2f pos = { 0.0, 0.0 };
@@ -31,7 +25,7 @@ public:
 		: pos(p), velocity(v), angle(a) {}
 };
 
-class CGridPosition : public Component
+class CGridPosition
 {
 public:
 	Grid3D pos = Grid3D(0, 0, 0);
@@ -40,7 +34,7 @@ public:
 	CGridPosition(const Grid3D& p): pos(p) {}
 };
 
-class CTileChunk : public Component
+class CTileChunk
 {
 public:
 	std::vector<Entity> tiles;
@@ -49,7 +43,7 @@ public:
 	CTileChunk(const std::vector<Entity>& t) : tiles(t) {}
 };
 
-class CTileRenderInfo : public Component
+class CTileRenderInfo
 {
 public:
 	sf::Vector2f position;
@@ -60,7 +54,7 @@ public:
 		: position(p), textureRect(r) { }
 };
 
-class CVertexArray : public Component
+class CVertexArray
 {
 public:
 	sf::VertexArray va;
@@ -69,7 +63,7 @@ public:
 	CVertexArray(const sf::VertexArray& iva) : va(iva) {}
 };
 
-class CInput : public Component
+class CInput
 {
 public:
 	bool up = false;
@@ -80,7 +74,7 @@ public:
 	CInput() = default;
 };
 
-class CHealth : public Component
+class CHealth
 {
 public:
 	int health = 0;
@@ -90,7 +84,7 @@ public:
 	CHealth(int h) : health(h), maxHealth(h) {}
 };
 
-class CDamage : public Component
+class CDamage
 {
 public:
 	int damage = 0;
@@ -99,7 +93,7 @@ public:
 	CDamage(int d) : damage(d) {}
 };
 
-class CBoundingBox : public Component
+class CBoundingBox
 {
 public:
 	Vec2f size;
@@ -110,7 +104,7 @@ public:
 		: size(s), halfSize(s / 2) { }
 };
 
-class CAnimation : public Component
+class CAnimation
 {
 public:
 	Animation animation;
@@ -121,7 +115,7 @@ public:
 		: animation(a), repeat(r) {}
 };
 
-class CState : public Component
+class CState
 {
 public:
 	std::string state = "none";
