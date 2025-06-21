@@ -59,4 +59,5 @@ public:
 	Scene_Play(GameEngine* gameEngine, const std::string& levelPath = "");
 
 	void sRender();
+	sf::VertexArray buildVertexArrayForChunk(CTileChunk& tileChunk, const sf::Texture& tileset);
 };

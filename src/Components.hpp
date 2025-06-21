@@ -49,6 +49,15 @@ public:
 	CTileChunk(const std::vector<Entity>& t) : tiles(t) {}
 };
 
+class CVertexArray : public Component
+{
+public:
+	sf::VertexArray va;
+
+	CVertexArray() = default;
+	CVertexArray(const sf::VertexArray& iva) : va(iva) {}
+};
+
 class CInput : public Component
 {
 public:

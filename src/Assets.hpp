@@ -119,6 +119,12 @@ public:
 		return m_textureMap.at(textureName);
 	}
 
+	sf::Texture& getTexture(const std::string& textureName)
+	{
+		assert(m_textureMap.find(textureName) != m_textureMap.end());
+		return m_textureMap.at(textureName);
+	}
+
 	const Animation& getAnimation(const std::string& animationName) const
 	{
 		assert(m_animationMap.find(animationName) != m_animationMap.end());

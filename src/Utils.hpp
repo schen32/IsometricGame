@@ -10,6 +10,18 @@ class Utils
 public:
 	Utils() = default;
 
+	static uint32_t lehmer64(uint64_t& seed)
+	{
+		seed *= 0xda942042e4dd58b5ULL;
+		return seed >> 32;
+	}
+
+	static uint64_t lehmer2(uint64_t s1, uint64_t s2)
+	{
+		uint64_t seed = lehmer64(s1) ^ s2;
+		return lehmer64(seed);
+	}
+
 	static bool isBehindAnotherTile(const CGridPosition& cGridPos, const TileMap& tileMap)
 	{
 		auto& gridPos = cGridPos.pos;

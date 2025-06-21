@@ -106,6 +106,10 @@ void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
 	auto& chunkTiles = chunk.add<CTileChunk>(m_memoryPool);
 
 	spawnTilesFromChunk(chunkPos, chunkTiles);
+
+	auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
+	chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
+
 	m_chunkMap[gridPos] = chunk;
 }
 
@@ -398,17 +402,67 @@ void Scene_Play::sRender()
 	window.clear(clearColor);
 
 	auto visibleArea = Utils::visibleArea(m_cameraView);
-	for (Entity tile : m_entityManager.getEntities("tile"))
+	for (Entity chunk : m_entityManager.getEntities("chunk"))
 	{
-		auto& tTrans = tile.get<CTransform>(m_memoryPool);
-		if (!Utils::isVisible(tTrans, visibleArea)) continue;
-		auto& tGrid = tile.get<CGridPosition>(m_memoryPool);
-		if (Utils::isBehindAnotherTile(tGrid, m_tileMap)) continue;
+		auto& cTrans = chunk.get<CTransform>(m_memoryPool);
+		if (!Utils::isVisible(cTrans, visibleArea)) continue;
 
-		auto& animation = tile.get<CAnimation>(m_memoryPool).animation;
-		window.draw(animation.m_sprite);
+		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
+		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
 	}
 
 	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
 	window.draw(animation.m_sprite);
+}
+
+sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, const sf::Texture& tileset)
+{
+	sf::VertexArray va(sf::PrimitiveType::Triangles);
+	auto& tiles = tileChunk.tiles;
+	va.resize(tiles.size() * 6); // 6 vertices per tile (2 triangles)
+
+	for (size_t i = 0; i < tiles.size(); ++i)
+	{
+		Entity& tile = tiles[i];
+		auto& transform = tile.get<CTransform>(m_memoryPool);
+		auto& animation = tile.get<CAnimation>(m_memoryPool).animation;
+		auto& sprite = animation.m_sprite;
+
+		sf::Vector2f pos = transform.pos;
+		sf::Vector2f origin = sprite.getOrigin();
+		sf::IntRect texRect = sprite.getTextureRect();
+
+		// Compute corners of the quad
+		sf::Vector2f topLeft = pos - origin;
+		sf::Vector2f topRight = { pos.x + origin.x, pos.y - origin.y };
+		sf::Vector2f bottomRight = pos + origin;
+		sf::Vector2f bottomLeft = { pos.x - origin.x, pos.y + origin.y };
+
+		sf::Vector2f texTopLeft = { float(texRect.position.x), float(texRect.position.y) };
+		sf::Vector2f texTopRight = { float(texRect.position.x + texRect.size.x), float(texRect.position.y) };
+		sf::Vector2f texBottomRight = { float(texRect.position.x + texRect.size.x), float(texRect.position.y + texRect.size.y) };
+		sf::Vector2f texBottomLeft = { float(texRect.position.x), float(texRect.position.y + texRect.size.y) };
+
+		size_t vi = i * 6;
+
+		// First triangle (top-left, top-right, bottom-right)
+		va[vi + 0].position = topLeft;
+		va[vi + 1].position = topRight;
+		va[vi + 2].position = bottomRight;
+
+		va[vi + 0].texCoords = texTopLeft;
+		va[vi + 1].texCoords = texTopRight;
+		va[vi + 2].texCoords = texBottomRight;
+
+		// Second triangle (bottom-right, bottom-left, top-left)
+		va[vi + 3].position = bottomRight;
+		va[vi + 4].position = bottomLeft;
+		va[vi + 5].position = topLeft;
+
+		va[vi + 3].texCoords = texBottomRight;
+		va[vi + 4].texCoords = texBottomLeft;
+		va[vi + 5].texCoords = texTopLeft;
+	}
+
+	return va;
 }
