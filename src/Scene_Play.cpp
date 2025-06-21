@@ -54,6 +54,7 @@ void Scene_Play::loadLevel(const std::string& filename)
 	m_entityManager = EntityManager();
 	m_memoryPool = MemoryPool(MAX_ENTITIES);
 	spawnPlayer();
+	// spawnTiles();
 	spawnChunks();
 	m_entityManager.update(m_memoryPool);
 }
@@ -73,7 +74,7 @@ void Scene_Play::spawnPlayer()
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
 	Grid3D gridPos(0, 0, 0);
-	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, pAnimation));
+	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
 }
@@ -99,6 +100,8 @@ void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
 	Grid3D gridPos(chunkX * m_chunkSize3D.x + m_chunkSize3D.x / 2,
 				   chunkY * m_chunkSize3D.y + m_chunkSize3D.y / 2,
 		           chunkZ * m_chunkSize3D.z + m_chunkSize3D.z / 2);
+
+	chunk.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	auto& chunkPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
 	auto& chunkTiles = chunk.add<CTileChunk>(m_memoryPool);
 
@@ -112,11 +115,11 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CTileChunk& 
 
 	Grid3D cPos = chunkPos.pos;
 	Grid3D halfChunkSize = m_chunkSize3D / 2;
-	for (size_t i = cPos.x - halfChunkSize.x; i < cPos.x + halfChunkSize.x-1; i++)
+	for (size_t i = cPos.x - halfChunkSize.x; i < cPos.x + halfChunkSize.x; i++)
 	{
-		for (size_t j = cPos.y - halfChunkSize.y; j < cPos.y + halfChunkSize.y-1; j++)
+		for (size_t j = cPos.y - halfChunkSize.y; j < cPos.y + halfChunkSize.y; j++)
 		{
-			for (size_t k = cPos.z - halfChunkSize.z; k < cPos.z + halfChunkSize.z-1; k++)
+			for (size_t k = cPos.z - halfChunkSize.z; k < cPos.z + halfChunkSize.z; k++)
 			{
 				chunkTiles.tiles.emplace_back(spawnTile(i, j, k));
 			}
@@ -161,7 +164,7 @@ Entity& Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 	auto& tAni = tile.add<CAnimation>(m_memoryPool, animation, true);
 
 	Grid3D gridPos(gridX, gridY, gridZ);
-	tile.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, tAni));
+	tile.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	tile.add<CGridPosition>(m_memoryPool, gridPos);
 	m_tileMap[gridPos] = tile;
 

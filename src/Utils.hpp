@@ -85,6 +85,14 @@ public:
 		return (i * gridPos.x + j * gridPos.y) - Vec2f(0, gridPos.z * eSize.y / 2);
 	}
 
+	Vec2f static gridToIsometric(Grid3D& gridPos, const Vec2f& size)
+	{
+		Vec2f i = Vec2f(size.x / 2, 0.5f * size.y / 2);
+		Vec2f j = Vec2f(-size.x / 2, 0.5f * size.y / 2);
+
+		return (i * gridPos.x + j * gridPos.y) - Vec2f(0, gridPos.z * size.y / 2);
+	}
+
 	Vec2f static isometricToGrid(float isoX, float isoY, int z, Vec2f gridCellSize)
 	{
 		Vec2f i = Vec2f(gridCellSize.x / 2, 0.5f * gridCellSize.y / 2);
