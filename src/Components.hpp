@@ -5,6 +5,8 @@
 #include "Vec2.hpp"
 #include "Grid3D.hpp"
 
+class Entity;
+
 class Component
 {
 public:
@@ -36,6 +38,15 @@ public:
 
 	CGridPosition() = default;
 	CGridPosition(const Grid3D& p): pos(p) {}
+};
+
+class CTileChunk : public Component
+{
+public:
+	std::vector<Entity> tiles;
+
+	CTileChunk() = default;
+	CTileChunk(const std::vector<Entity>& t) : tiles(t) {}
 };
 
 class CInput : public Component

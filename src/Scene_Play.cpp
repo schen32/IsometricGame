@@ -93,7 +93,7 @@ void Scene_Play::spawnTiles(const std::string& filename)
 
 			const static size_t waterLevel = 20;
 			const static size_t grassLevel = 24;
-			for (size_t k = height - 5; k <= height; k++)
+			for (size_t k = height - 4; k <= height; k++)
 			{
 				if (k <= waterLevel)
 				{
