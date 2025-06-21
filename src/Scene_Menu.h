@@ -9,7 +9,7 @@
 
 class Scene_Menu : public Scene
 {
-protected:
+public:
 	std::string m_musicName;
 	Vec2f m_mousePos;
 
@@ -24,7 +24,7 @@ protected:
 	void select();
 	void sHover();
 	void sAnimation();
-public:
+
 	Scene_Menu() = default;
 	Scene_Menu(GameEngine* gameEngine = nullptr);
 	void sRender();

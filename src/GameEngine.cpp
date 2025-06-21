@@ -2,6 +2,7 @@
 #include "Assets.hpp"
 #include "Scene_Menu.h"
 #include "Scene_Play.h"
+#include "Scene.h"
 
 #include <fstream>
 #include <iostream>
@@ -113,36 +114,32 @@ void GameEngine::sUserInput()
 
 		if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
 		{
-			if (currentScene()->getMouseActionMap().find(mousePressed->button) ==
-				currentScene()->getMouseActionMap().end())
-			{
-				continue;
-			}
-			currentScene()->doAction
-			(
-				Action
-				(
-					currentScene()->getMouseActionMap().at(mousePressed->button),
-					"START", mousePressed->position
-				)
-			);
+            if (currentScene()->m_mouseActionMap.find(mousePressed->button) != currentScene()->m_mouseActionMap.end())  
+            {  
+                currentScene()->doAction  
+                (  
+                    Action  
+                    (  
+                        currentScene()->getMouseActionMap().at(mousePressed->button),  
+                        "START", mousePressed->position  
+                    )
+                );
+            }
 		}
 
 		if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
 		{
-			if (currentScene()->getMouseActionMap().find(mouseReleased->button) ==
-				currentScene()->getMouseActionMap().end())
+			if (currentScene()->m_mouseActionMap.find(mouseReleased->button) != currentScene()->m_mouseActionMap.end())
 			{
-				continue;
-			}
-			currentScene()->doAction
-			(
-				Action
+				currentScene()->doAction
 				(
-					currentScene()->getMouseActionMap().at(mouseReleased->button),
-					"END", mouseReleased->position
-				)
-			);
+					Action
+					(
+						currentScene()->getMouseActionMap().at(mouseReleased->button),
+						"END", mouseReleased->position
+					)
+				);
+			}
 		}
 
 		if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>())

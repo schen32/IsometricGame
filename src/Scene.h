@@ -13,7 +13,7 @@ using MouseActionMap = std::unordered_map<sf::Mouse::Button, std::string>;
 
 class Scene
 {
-protected:
+public:
 	GameEngine* m_game = nullptr;
 	EntityManager m_entityManager;
 	MemoryPool m_memoryPool;
@@ -26,7 +26,6 @@ protected:
 	virtual void onEnd() = 0;
 	void setPaused(bool paused);
 
-public:
 	Scene() = default;
 	Scene(GameEngine* gameEngine);
 

@@ -49,10 +49,10 @@ void Scene_Play::init(const std::string& levelPath)
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
-	const static size_t MAX_ENTITIES = 2048 * 2048;
+	const static size_t MAX_CHUNKS = m_numChunks3D.volume() * m_chunkSize3D.volume() * 2;
 
 	m_entityManager = EntityManager();
-	m_memoryPool = MemoryPool(MAX_ENTITIES);
+	m_memoryPool = MemoryPool(MAX_CHUNKS);
 	spawnPlayer();
 	// spawnTiles();
 	spawnChunks();
@@ -109,8 +109,6 @@ void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
 
 	auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
 	chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
-
-	m_chunkMap[gridPos] = chunk;
 }
 
 void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CTileChunk& chunkTiles)
@@ -171,7 +169,6 @@ Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 	tile.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	tile.add<CGridPosition>(m_memoryPool, gridPos);
 
-	m_tileMap[gridPos] = tile;
 	return tile;
 }
 
@@ -258,7 +255,6 @@ void Scene_Play::sDoAction(const Action& action)
 		else if (action.m_name == "LEFT_CLICK")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
-			sSelect();
 		}
 		else if (action.m_name == "RIGHT_CLICK")
 		{

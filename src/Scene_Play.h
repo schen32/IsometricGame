@@ -13,7 +13,7 @@ using ChunkMap = std::map<Grid3D, Entity>;
 
 class Scene_Play : public Scene
 {
-protected:
+public:
 	std::string				 m_levelPath;
 	ParticleSystem			 m_particleSystem;
 	sf::View				 m_cameraView;
@@ -23,9 +23,7 @@ protected:
 	Vec2f					 m_gridCellSize = { 32, 32 };
 	Grid3D   				 m_gridSize3D = { 250, 250, 50 };
 	Grid3D					 m_chunkSize3D = { 32, 32, 32 };
-	Grid3D					 m_numChunks3D = { 4, 4, 3 };
-	TileMap					 m_tileMap;
-	ChunkMap				 m_chunkMap;
+	Grid3D					 m_numChunks3D = { 4, 4, 4 };
 	Entity					 m_selectedTile;
 
 	void init(const std::string& levelPath);
@@ -53,7 +51,6 @@ protected:
 	void sCamera();
 	void sGui();
 	void sSelect();
-public:
 
 	Scene_Play() = default;
 	Scene_Play(GameEngine* gameEngine, const std::string& levelPath = "");
