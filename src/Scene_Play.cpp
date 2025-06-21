@@ -72,10 +72,10 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0.f, 0.f, 0.f);
-	auto& pTransform = p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, pAnimation));
-	auto& pGridPos = p.add<CGridPosition>(m_memoryPool, gridPos);
-	auto& pInput = p.add<CInput>(m_memoryPool);
+	Grid3D gridPos(0, 0, 0);
+	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, pAnimation));
+	p.add<CGridPosition>(m_memoryPool, gridPos);
+	p.add<CInput>(m_memoryPool);
 }
 
 void Scene_Play::spawnTiles(const std::string& filename)
@@ -97,20 +97,14 @@ void Scene_Play::spawnTiles(const std::string& filename)
 
 			const static size_t waterLevel = 20;
 			const static size_t grassLevel = 24;
-			for (size_t k = height - 4; k <= height; k++)
+			for (size_t k = height - 3; k <= height; k++)
 			{
 				if (k <= waterLevel)
-				{
 					spawnTile(i, j, k, waterAni);
-				}
 				else if (waterLevel < k && k < grassLevel)
-				{
 					spawnTile(i, j, k, groundAni);
-				}
 				else if (grassLevel <= k)
-				{
 					spawnTile(i, j, k, grassAni);
-				}
 			}
 		}
 	}
@@ -193,7 +187,6 @@ void Scene_Play::sStatus()
 
 void Scene_Play::sCollision()
 {
-	auto& pTransform = player().get<CTransform>(m_memoryPool);
 	auto visibleArea = Utils::visibleArea(m_cameraView);
 
 	for (Entity tile : m_entityManager.getEntities("tile"))
@@ -202,6 +195,7 @@ void Scene_Play::sCollision()
 		if (!Utils::isVisible(tTrans, visibleArea)) continue;
 		if (!(player().has<CBoundingBox>(m_memoryPool) && tile.has<CBoundingBox>(m_memoryPool)))
 			return;
+
 		auto& pTrans = player().get<CTransform>(m_memoryPool);
 		auto& pBB = player().get<CBoundingBox>(m_memoryPool);
 		auto& tBB = tile.get<CBoundingBox>(m_memoryPool);
@@ -209,23 +203,22 @@ void Scene_Play::sCollision()
 		auto overlap = Physics::GetOverlap(pBB, pTrans, tBB, tTrans);
 		if (overlap.x > 0 && overlap.y > 0)
 		{
-			
 			Vec2f prevOverlap = Physics::GetPreviousOverlap(pBB, pTrans, tBB, tTrans);
 			if (prevOverlap.x > 0)
 			{
-				pTransform.velocity.y = 0;
-				if (pTransform.prevPos.y < tTrans.pos.y)
-					pTransform.pos.y -= overlap.y;
+				pTrans.velocity.y = 0;
+				if (pTrans.prevPos.y < tTrans.pos.y)
+					pTrans.pos.y -= overlap.y;
 				else
-					pTransform.pos.y += overlap.y;
+					pTrans.pos.y += overlap.y;
 			}
 			else if (prevOverlap.y > 0)
 			{
-				pTransform.velocity.x = 0;
-				if (pTransform.prevPos.x < tTrans.pos.x)
-					pTransform.pos.x -= overlap.x;
+				pTrans.velocity.x = 0;
+				if (pTrans.prevPos.x < tTrans.pos.x)
+					pTrans.pos.x -= overlap.x;
 				else
-					pTransform.pos.x += overlap.x;
+					pTrans.pos.x += overlap.x;
 			}
 		}
 	}

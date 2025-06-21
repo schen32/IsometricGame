@@ -45,17 +45,7 @@ public:
 		}
 	}
 
-	size_t getNextEntityIndex()
-	{
-		if (m_freeIndices.empty())
-		{
-			throw std::runtime_error("No more free entity indices!");
-		}
-		size_t index = m_freeIndices.back();
-		m_freeIndices.pop_back();
-		return index;
-	}
-
+	size_t getNextEntityIndex();
 	Entity addEntity(const std::string& tag, const std::string& name);
 
 	template <typename T>
