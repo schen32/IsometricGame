@@ -49,6 +49,17 @@ public:
 	CTileChunk(const std::vector<Entity>& t) : tiles(t) {}
 };
 
+class CTileRenderInfo : public Component
+{
+public:
+	sf::Vector2f position;
+	sf::IntRect textureRect;
+
+	CTileRenderInfo() = default;
+	CTileRenderInfo(const sf::Vector2f& p, const sf::IntRect& r)
+		: position(p), textureRect(r) { }
+};
+
 class CVertexArray : public Component
 {
 public:

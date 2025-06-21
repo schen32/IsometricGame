@@ -153,20 +153,22 @@ Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 {
 	const static size_t waterLevel = 20;
 	const static size_t grassLevel = 24;
-	Animation animation;
+	sf::Vector2i tileTexPos;
 
 	if (gridZ <= waterLevel)
-		animation = m_game->assets().getAnimation("WaterTile");
-	else if (waterLevel < gridZ && gridZ < grassLevel)
-		animation = m_game->assets().getAnimation("GroundTile");
-	else if (grassLevel <= gridZ)
-		animation = m_game->assets().getAnimation("GrassTile");
+		tileTexPos = sf::Vector2i(0, 10);
+	if (waterLevel < gridZ && gridZ < grassLevel)
+		tileTexPos = sf::Vector2i(0, 0);
+	if (grassLevel <= gridZ)
+		tileTexPos = sf::Vector2i(0, 2);
+	tileTexPos.x *= m_gridCellSize.x;
+	tileTexPos.y *= m_gridCellSize.y;
 
-	auto tile = m_entityManager.addEntity(m_memoryPool, "tile", animation.m_name);
-	auto& tAni = tile.add<CAnimation>(m_memoryPool, animation, true);
-
+	auto tile = m_entityManager.addEntity(m_memoryPool, "tile", "Tile");
 	Grid3D gridPos(gridX, gridY, gridZ);
-	tile.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
+	
+	tile.add<CTileRenderInfo>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize),
+		sf::IntRect(tileTexPos, sf::Vector2i(m_gridCellSize)));
 	tile.add<CGridPosition>(m_memoryPool, gridPos);
 
 	return tile;
@@ -341,27 +343,27 @@ void Scene_Play::sRender()
 
 sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, const sf::Texture& tileset)
 {
-	sf::VertexArray va(sf::PrimitiveType::Triangles);
 	auto& tiles = tileChunk.tiles;
-	va.resize(tiles.size() * 6); // 6 vertices per tile (2 triangles)
+	sf::VertexArray va(sf::PrimitiveType::Triangles);
+	va.resize(tiles.size() * 6); // 6 vertices per tile
 
 	for (size_t i = 0; i < tiles.size(); ++i)
 	{
-		Entity tile = tiles[i];
+		Entity& tile = tiles[i];
 		auto& transform = tile.get<CTransform>(m_memoryPool);
-		auto& animation = tile.get<CAnimation>(m_memoryPool).animation;
-		auto& sprite = animation.m_sprite;
+		auto& tileInfo = tile.get<CTileRenderInfo>(m_memoryPool);
 
-		sf::Vector2f pos = transform.pos;
-		sf::Vector2f origin = sprite.getOrigin();
-		sf::IntRect texRect = sprite.getTextureRect();
+		const sf::Vector2f& pos = tileInfo.position;
+		const sf::Vector2f& origin = m_gridCellSize / 2;
+		const sf::IntRect& texRect = tileInfo.textureRect;
 
-		// Compute corners of the quad
+		// Top-left corner of the tile in world space
 		sf::Vector2f topLeft = pos - origin;
-		sf::Vector2f topRight = { pos.x + origin.x, pos.y - origin.y };
-		sf::Vector2f bottomRight = pos + origin;
-		sf::Vector2f bottomLeft = { pos.x - origin.x, pos.y + origin.y };
+		sf::Vector2f topRight = topLeft + sf::Vector2f(texRect.size.x, 0.f);
+		sf::Vector2f bottomRight = topLeft + sf::Vector2f(texRect.size.x, texRect.size.y);
+		sf::Vector2f bottomLeft = topLeft + sf::Vector2f(0.f, texRect.size.y);
 
+		// Texture coordinates
 		sf::Vector2f texTopLeft = { float(texRect.position.x), float(texRect.position.y) };
 		sf::Vector2f texTopRight = { float(texRect.position.x + texRect.size.x), float(texRect.position.y) };
 		sf::Vector2f texBottomRight = { float(texRect.position.x + texRect.size.x), float(texRect.position.y + texRect.size.y) };
@@ -369,7 +371,7 @@ sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, cons
 
 		size_t vi = i * 6;
 
-		// First triangle (top-left, top-right, bottom-right)
+		// First triangle
 		va[vi + 0].position = topLeft;
 		va[vi + 1].position = topRight;
 		va[vi + 2].position = bottomRight;
@@ -378,7 +380,7 @@ sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, cons
 		va[vi + 1].texCoords = texTopRight;
 		va[vi + 2].texCoords = texBottomRight;
 
-		// Second triangle (bottom-right, bottom-left, top-left)
+		// Second triangle
 		va[vi + 3].position = bottomRight;
 		va[vi + 4].position = bottomLeft;
 		va[vi + 5].position = topLeft;
