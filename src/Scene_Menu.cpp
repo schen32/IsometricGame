@@ -27,27 +27,30 @@ void Scene_Menu::init()
 
 void Scene_Menu::loadMenu()
 {
-	m_entityManager = EntityManager();
+	const static size_t MAX_ENTITIES = 64;
 
-	auto title = m_entityManager.addEntity("ui", "Game Engine");
-	auto& tAnimation = title.add<CAnimation>(m_game->assets().getAnimation("ButtonHover"), true).animation;
-	auto& tTransform = title.add<CTransform>(Vec2f(width() / 2, height() * 0.15f));
+	m_entityManager = EntityManager();
+	m_memoryPool = MemoryPool(MAX_ENTITIES);
+
+	auto title = m_entityManager.addEntity(m_memoryPool, "ui", "Game Engine");
+	auto& tAnimation = title.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("ButtonHover"), true).animation;
+	auto& tTransform = title.add<CTransform>(m_memoryPool, Vec2f(width() / 2, height() * 0.15f));
 	tTransform.scale = Vec2f(2.f, 1.2f);
 
-	auto playButton = m_entityManager.addEntity("button", "Start");
-	playButton.add<CAnimation>(m_game->assets().getAnimation("Button"), true);
-	auto& pbTransform = playButton.add<CTransform>(Vec2f(width() / 2, height() * 0.4f));
-	playButton.add<CState>("unselected");
+	auto playButton = m_entityManager.addEntity(m_memoryPool, "button", "Start");
+	playButton.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("Button"), true);
+	auto& pbTransform = playButton.add<CTransform>(m_memoryPool, Vec2f(width() / 2, height() * 0.4f));
+	playButton.add<CState>(m_memoryPool, "unselected");
 
-	auto quitButton = m_entityManager.addEntity("button", "Quit");
-	quitButton.add<CAnimation>(m_game->assets().getAnimation("Button"), true);
-	auto& qTransform = quitButton.add<CTransform>(Vec2f(width() / 2, height() * 0.6f));
-	quitButton.add<CState>("unselected");
+	auto quitButton = m_entityManager.addEntity(m_memoryPool, "button", "Quit");
+	quitButton.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("Button"), true);
+	auto& qTransform = quitButton.add<CTransform>(m_memoryPool, Vec2f(width() / 2, height() * 0.6f));
+	quitButton.add<CState>(m_memoryPool, "unselected");
 }
 
 void Scene_Menu::update()
 {
-	m_entityManager.update();
+	m_entityManager.update(m_memoryPool);
 	sHover();
 	sAnimation();
 }
@@ -56,8 +59,10 @@ void Scene_Menu::sHover()
 {
 	for (Entity button : m_entityManager.getEntities("button"))
 	{
-		auto& buttonState = button.get<CState>().state;
-		if (Utils::isInside(m_mousePos, button))
+		auto& buttonState = button.get<CState>(m_memoryPool).state;
+		auto& buttonTrans = button.get<CTransform>(m_memoryPool);
+		auto& buttonAni = button.get<CAnimation>(m_memoryPool);
+		if (Utils::isInside(m_mousePos, buttonTrans, buttonAni))
 			buttonState = "selected";
 		else
 			buttonState = "unselected";
@@ -68,17 +73,17 @@ void Scene_Menu::sAnimation()
 {
 	for (Entity button : m_entityManager.getEntities("button"))
 	{
-		auto& buttonState = button.get<CState>().state;
-		auto& buttonAnimation = button.get<CAnimation>().animation;
+		auto& buttonState = button.get<CState>(m_memoryPool).state;
+		auto& buttonAnimation = button.get<CAnimation>(m_memoryPool).animation;
 
 		if (buttonState == "selected" && buttonAnimation.m_name != "ButtonHover")
 		{
-			button.add<CAnimation>(m_game->assets().getAnimation("ButtonHover"), true);
+			button.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("ButtonHover"), true);
 			playSound("BubblierStep", 15);
 		}
 		else if (buttonState == "unselected" && buttonAnimation.m_name != "Button")
 		{
-			button.add<CAnimation>(m_game->assets().getAnimation("Button"), true);
+			button.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("Button"), true);
 		}
 	}
 }
@@ -103,11 +108,13 @@ void Scene_Menu::select()
 {
 	for (Entity button : m_entityManager.getEntities("button"))
 	{
-		if (!Utils::isInside(m_mousePos, button)) continue;
+		auto& bTrans = button.get<CTransform>(m_memoryPool);
+		auto& bAni = button.get<CAnimation>(m_memoryPool);
+		if (!Utils::isInside(m_mousePos, bTrans, bAni)) continue;
 
-		if (button.name() == "Start")
+		if (button.name(m_memoryPool) == "Start")
 			m_game->changeScene("PLAY", std::make_shared<Scene_Play>(m_game, "assets/play.txt"));
-		else if (button.name() == "Quit")
+		else if (button.name(m_memoryPool) == "Quit")
 			onEnd();
 	}
 }
@@ -137,10 +144,10 @@ void Scene_Menu::sRender()
     
 	for (Entity entity : m_entityManager.getEntities())
 	{
-		if (!entity.has<CAnimation>()) continue;
+		if (!entity.has<CAnimation>(m_memoryPool)) continue;
 
-		auto& animation = entity.get<CAnimation>().animation;
-		auto& transform = entity.get<CTransform>();
+		auto& animation = entity.get<CAnimation>(m_memoryPool).animation;
+		auto& transform = entity.get<CTransform>(m_memoryPool);
 
 		animation.m_sprite.setPosition(transform.pos);
 		animation.m_sprite.setScale(transform.scale);
@@ -148,12 +155,12 @@ void Scene_Menu::sRender()
 
 		auto buttonText = sf::Text(m_game->assets().getFont("FutureMillennium"));
 
-		if (entity.tag() == "ui")
+		if (entity.tag(m_memoryPool) == "ui")
 			buttonText.setCharacterSize(150);
-		else if (entity.tag() == "button")
+		else if (entity.tag(m_memoryPool) == "button")
 			buttonText.setCharacterSize(100);
 
-		buttonText.setString(entity.name());
+		buttonText.setString(entity.name(m_memoryPool));
 		buttonText.setOutlineThickness(2.0f);
 		buttonText.setOutlineColor(sf::Color(86, 106, 137));
 		auto bounds = buttonText.getLocalBounds();

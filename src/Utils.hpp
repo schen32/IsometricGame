@@ -10,9 +10,9 @@ class Utils
 public:
 	Utils() = default;
 
-	static bool isBehindAnotherTile(Entity tile, const TileMap& tileMap)
+	static bool isBehindAnotherTile(const CGridPosition& cGridPos, const TileMap& tileMap)
 	{
-		auto& gridPos = tile.get<CGridPosition>().pos;
+		auto& gridPos = cGridPos.pos;
 		if (tileMap.find(gridPos + Grid3D(1, 1, 1)) == tileMap.end())
 			return false;
 		return true;
@@ -27,18 +27,17 @@ public:
 		return visibleArea;
 	}
 
-	static bool isVisible(Entity entity, const sf::FloatRect& visibleArea)
+	static bool isVisible(const CTransform& eTransform, const sf::FloatRect& visibleArea)
 	{
-		auto& pos = entity.get<CTransform>().pos;
+		auto& pos = eTransform.pos;
 		return visibleArea.contains(pos);
 	}
 
-	bool static isInsideTopFace(const Vec2f& pos, Entity entity)
+	bool static isInsideTopFace(const Vec2f& pos, const CTransform& eTransform, const CAnimation& eAnimation)
 	{
-		auto eTransform = entity.get<CTransform>();
 		Vec2f spriteCenter = eTransform.pos; // center of entire sprite
 		Vec2f scale = eTransform.scale;
-		Vec2f size = entity.get<CAnimation>().animation.m_size;
+		Vec2f size = eAnimation.animation.m_size;
 
 		// Apply scale
 		size.x *= scale.x;
@@ -58,13 +57,12 @@ public:
 		return (dx / halfWidth + dy / halfHeight) <= 1.0f;
 	}
 
-	bool static isInside(const Vec2f& point, Entity entity)
+	bool static isInside(const Vec2f& point, const CTransform& eTransform, const CAnimation& eAnimation)
 	{
-		const auto& transform = entity.get<CTransform>();
-		const Vec2f& center = transform.pos;
-		const Vec2f& scale = transform.scale;
+		const Vec2f& center = eTransform.pos;
+		const Vec2f& scale = eTransform.scale;
 
-		Vec2f size = entity.get<CAnimation>().animation.m_size;
+		Vec2f size = eAnimation.animation.m_size;
 		size.x *= scale.x;
 		size.y *= scale.y;
 
@@ -77,9 +75,8 @@ public:
 			point.y >= top && point.y <= bottom);
 	}
 
-	Vec2f static gridToIsometric(Grid3D gridPos, Entity entity)
+	Vec2f static gridToIsometric(Grid3D& gridPos, const CAnimation& eAnimation)
 	{
-		auto& eAnimation = entity.get<CAnimation>();
 		Vec2f eSize = eAnimation.animation.m_size;
 
 		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);

@@ -29,6 +29,7 @@ public:
 	std::vector<bool>			m_active;
 	std::vector<size_t>			m_freeIndices;
 
+	MemoryPool() = default;
 	MemoryPool(size_t maxEntities) : m_numEntities(0), m_maxEntities(maxEntities)
 	{
 		std::apply([&](auto&... componentVecs) {
@@ -42,12 +43,6 @@ public:
 		{
 			m_freeIndices.push_back(i);
 		}
-	}
-	static MemoryPool& Instance()
-	{
-		const static size_t MAX_ENTITIES = 1024 * 1024;
-		static MemoryPool pool(MAX_ENTITIES);
-		return pool;
 	}
 
 	size_t getNextEntityIndex()

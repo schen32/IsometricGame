@@ -2,6 +2,7 @@
 
 #include "Action.hpp"
 #include "EntityManager.hpp"
+#include "MemoryPool.hpp"
 
 #include <memory>
 
@@ -15,6 +16,7 @@ class Scene
 protected:
 	GameEngine* m_game = nullptr;
 	EntityManager m_entityManager;
+	MemoryPool m_memoryPool;
 	KeyActionMap m_keyActionMap;
 	MouseActionMap m_mouseActionMap;
 	bool m_paused = false;

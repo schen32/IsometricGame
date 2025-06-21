@@ -14,16 +14,16 @@ public:
 	EntityVec m_entitiesToAdd;
 	std::unordered_map<std::string, EntityVec> m_entityMap;
 
-	void removeDeadEntities(EntityVec& vec)
+	void removeDeadEntities(MemoryPool& pool, EntityVec& vec)
 	{
 		vec.erase(
 			std::remove_if
 			(
 				vec.begin(),
 				vec.end(),
-				[](Entity entity)
+				[&pool](Entity entity)
 				{
-					return !entity.isActive();
+					return !entity.isActive(pool);
 				}
 			),
 			vec.end()
@@ -32,26 +32,26 @@ public:
 
 	EntityManager() = default;
 
-	void update()
+	void update(MemoryPool& pool)
 	{
 		for (auto& entity : m_entitiesToAdd)
 		{
 			m_entities.push_back(entity);
-			auto& entityTag = entity.tag();
+			auto& entityTag = entity.tag(pool);
 			m_entityMap[entityTag].push_back(entity);
 		}
 		m_entitiesToAdd.clear();
 
-		removeDeadEntities(m_entities);
+		removeDeadEntities(pool, m_entities);
 		for (auto& [tag, entityVec] : m_entityMap)
 		{
-			removeDeadEntities(entityVec);
+			removeDeadEntities(pool, entityVec);
 		}
 	}
 
-	Entity addEntity(const std::string& tag, const std::string& name)
+	Entity addEntity(MemoryPool& pool, const std::string& tag, const std::string& name)
 	{
-		auto entity = MemoryPool::Instance().addEntity(tag, name);
+		auto entity = pool.addEntity(tag, name);
 		m_entitiesToAdd.push_back(entity);
 		return entity;
 	}

@@ -12,14 +12,14 @@ public:
 	Entity() = default;
 	Entity(size_t id) : m_id(id) {}
 
-	bool isActive()
+	bool isActive(MemoryPool& pool)
 	{
-		return MemoryPool::Instance().isActive(m_id);
+		return pool.isActive(m_id);
 	}
 
-	void destroy()
+	void destroy(MemoryPool& pool)
 	{
-		MemoryPool::Instance().destroy(m_id);
+		pool.destroy(m_id);
 	}
 
 	size_t id()
@@ -27,37 +27,37 @@ public:
 		return m_id;
 	}
 
-	std::string& tag()
+	std::string& tag(MemoryPool& pool)
 	{
-		return MemoryPool::Instance().tag(m_id);
+		return pool.tag(m_id);
 	}
 
-	std::string& name()
+	std::string& name(MemoryPool& pool)
 	{
-		return MemoryPool::Instance().name(m_id);
+		return pool.name(m_id);
 	}
 
 	template <typename T>
-	bool has()
+	bool has(MemoryPool& pool)
 	{
-		return MemoryPool::Instance().has<T>(m_id);
+		return pool.has<T>(m_id);
 	}
 
 	template <typename T, typename... TArgs>
-	T& add(TArgs&&... mArgs)
+	T& add(MemoryPool& pool, TArgs&&... mArgs)
 	{
-		return MemoryPool::Instance().add<T>(m_id, std::forward<TArgs>(mArgs)...);
+		return pool.add<T>(m_id, std::forward<TArgs>(mArgs)...);
 	}
 
 	template <typename T>
-	T& get()
+	T& get(MemoryPool& pool)
 	{
-		return MemoryPool::Instance().get<T>(m_id);
+		return pool.get<T>(m_id);
 	}
 
 	template <typename T>
-	void remove()
+	void remove(MemoryPool& pool)
 	{
-		MemoryPool::Instance().remove<T>(m_id);
+		pool.remove<T>(m_id);
 	}
 };

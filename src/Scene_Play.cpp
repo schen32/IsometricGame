@@ -8,6 +8,7 @@
 #include "ParticleSystem.hpp"
 #include "Utils.hpp"
 #include "PerlinNoise.hpp"
+#include "Entity.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -48,10 +49,13 @@ void Scene_Play::init(const std::string& levelPath)
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
+	const static size_t MAX_ENTITIES = 1024 * 1024;
+
 	m_entityManager = EntityManager();
+	m_memoryPool = MemoryPool(MAX_ENTITIES);
 	spawnPlayer();
 	spawnTiles(filename);
-	m_entityManager.update();
+	m_entityManager.update(m_memoryPool);
 }
 
 Entity Scene_Play::player()
@@ -63,15 +67,15 @@ Entity Scene_Play::player()
 
 void Scene_Play::spawnPlayer()
 {
-	auto p = m_entityManager.addEntity("player", "playerCharacter");
+	auto p = m_entityManager.addEntity(m_memoryPool, "player", "playerCharacter");
 	m_playerDied = false;
 	
-	auto& pAnimation = p.add<CAnimation>(m_game->assets().getAnimation("StormheadIdle"), true);
+	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0, 0, 0);
-	auto& pTransform = p.add<CTransform>(Utils::gridToIsometric(gridPos, p));
-	p.add<CGridPosition>(gridPos);
-	p.add<CInput>();
+	Grid3D gridPos(0.f, 0.f, 0.f);
+	auto& pTransform = p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, pAnimation));
+	auto& pGridPos = p.add<CGridPosition>(m_memoryPool, gridPos);
+	auto& pInput = p.add<CInput>(m_memoryPool);
 }
 
 void Scene_Play::spawnTiles(const std::string& filename)
@@ -114,22 +118,22 @@ void Scene_Play::spawnTiles(const std::string& filename)
 
 void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const Animation& animation)
 {
-	auto tile = m_entityManager.addEntity("tile", animation.m_name);
-	tile.add<CAnimation>(animation, true);
+	auto tile = m_entityManager.addEntity(m_memoryPool, "tile", animation.m_name);
+	auto& tAni = tile.add<CAnimation>(m_memoryPool, animation, true);
 
 	Grid3D gridPos(gridX, gridY, gridZ);
-	tile.add<CTransform>(Utils::gridToIsometric(gridPos, tile));
-	tile.add<CGridPosition>(gridPos);
+	tile.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, tAni));
+	tile.add<CGridPosition>(m_memoryPool, gridPos);
 	m_tileMap[gridPos] = tile;
 
-	tile.add<CState>("unselected");
+	tile.add<CState>(m_memoryPool, "unselected");
 }
 
 void Scene_Play::update()
 {
 	if (!m_paused)
 	{
-		m_entityManager.update();
+		m_entityManager.update(m_memoryPool);
 		sAI();
 		sMovement();
 		sCollision();
@@ -147,8 +151,9 @@ void Scene_Play::sMovement()
 {
 	static const float playerSpeed = 2.0f;
 
-	auto& pInput = player().get<CInput>();
-	auto& pTransform = player().get<CTransform>();
+	auto p = player();
+	auto& pInput = p.get<CInput>(m_memoryPool);
+	auto& pTransform = p.get<CTransform>(m_memoryPool);
 
 	pTransform.velocity = { 0.f, 0.f };
 
@@ -160,16 +165,16 @@ void Scene_Play::sMovement()
 	// Normalize if necessary
 	if (pTransform.velocity.x != 0.f || pTransform.velocity.y != 0.f)
 	{
-		player().get<CState>().state = "running";
+		player().get<CState>(m_memoryPool).state = "running";
 		pTransform.velocity = pTransform.velocity.normalize() * playerSpeed;
 	}
 	else
-		player().get<CState>().state = "idle";
+		player().get<CState>(m_memoryPool).state = "idle";
 
 
 	for (Entity entity : m_entityManager.getEntities())
 	{
-		auto& eTransform = entity.get<CTransform>();
+		auto& eTransform = entity.get<CTransform>(m_memoryPool);
 
 		eTransform.prevPos = eTransform.pos;
 		eTransform.pos += eTransform.velocity;
@@ -188,25 +193,28 @@ void Scene_Play::sStatus()
 
 void Scene_Play::sCollision()
 {
-	auto& pTransform = player().get<CTransform>();
+	auto& pTransform = player().get<CTransform>(m_memoryPool);
 	auto visibleArea = Utils::visibleArea(m_cameraView);
 
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (player().id() == tile.id())
-			continue;
+		auto& tTrans = tile.get<CTransform>(m_memoryPool);
+		if (!Utils::isVisible(tTrans, visibleArea)) continue;
+		if (!(player().has<CBoundingBox>(m_memoryPool) && tile.has<CBoundingBox>(m_memoryPool)))
+			return;
+		auto& pTrans = player().get<CTransform>(m_memoryPool);
+		auto& pBB = player().get<CBoundingBox>(m_memoryPool);
+		auto& tBB = tile.get<CBoundingBox>(m_memoryPool);
 
-		if (!Utils::isVisible(tile, visibleArea)) continue;
-
-		auto overlap = Physics::GetOverlap(player(), tile);
+		auto overlap = Physics::GetOverlap(pBB, pTrans, tBB, tTrans);
 		if (overlap.x > 0 && overlap.y > 0)
 		{
-			auto& tileTransform = tile.get<CTransform>();
-			Vec2f prevOverlap = Physics::GetPreviousOverlap(player(), tile);
+			
+			Vec2f prevOverlap = Physics::GetPreviousOverlap(pBB, pTrans, tBB, tTrans);
 			if (prevOverlap.x > 0)
 			{
 				pTransform.velocity.y = 0;
-				if (pTransform.prevPos.y < tileTransform.pos.y)
+				if (pTransform.prevPos.y < tTrans.pos.y)
 					pTransform.pos.y -= overlap.y;
 				else
 					pTransform.pos.y += overlap.y;
@@ -214,7 +222,7 @@ void Scene_Play::sCollision()
 			else if (prevOverlap.y > 0)
 			{
 				pTransform.velocity.x = 0;
-				if (pTransform.prevPos.x < tileTransform.pos.x)
+				if (pTransform.prevPos.x < tTrans.pos.x)
 					pTransform.pos.x -= overlap.x;
 				else
 					pTransform.pos.x += overlap.x;
@@ -229,10 +237,12 @@ void Scene_Play::sSelect()
 
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, visibleArea)) continue;
+		auto& tTrans = tile.get<CTransform>(m_memoryPool);
+		if (!Utils::isVisible(tTrans, visibleArea)) continue;
+		auto& tAni = tile.get<CAnimation>(m_memoryPool);
 
-		auto& tileState = tile.get<CState>().state;
-		bool insideTile = Utils::isInsideTopFace(m_mousePos, tile);
+		auto& tileState = tile.get<CState>(m_memoryPool).state;
+		bool insideTile = Utils::isInsideTopFace(m_mousePos, tTrans, tAni);
 		if (insideTile && tileState != "selected")
 			tileState = "selected";
 		else if (!insideTile && tileState != "unselected")
@@ -242,7 +252,7 @@ void Scene_Play::sSelect()
 
 void Scene_Play::sDoAction(const Action& action)
 {
-	auto& pInput = player().get<CInput>();
+	auto& pInput = player().get<CInput>(m_memoryPool);
 	if (action.m_type == "START")
 	{
 		if (action.m_name == "LEFT")
@@ -295,26 +305,25 @@ void Scene_Play::sAnimation()
 	auto visibleArea = Utils::visibleArea(m_cameraView);
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, visibleArea)) continue;
+		auto& transform = tile.get<CTransform>(m_memoryPool);
+		if (!Utils::isVisible(transform, visibleArea)) continue;
+		auto& animation = tile.get<CAnimation>(m_memoryPool).animation;
 
-		auto& transform = tile.get<CTransform>();
-		auto& animation = tile.get<CAnimation>().animation;
-
-		if (tile.get<CState>().state == "selected")
+		if (tile.get<CState>(m_memoryPool).state == "selected")
 			animation.m_sprite.setPosition(transform.pos + Vec2f(0, -4.0f));
 		else
 			animation.m_sprite.setPosition(transform.pos);
 		animation.update();
 	}
 
-	auto& transform = player().get<CTransform>();
-	auto& animation = player().get<CAnimation>().animation;
+	auto& transform = player().get<CTransform>(m_memoryPool);
+	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
 	animation.m_sprite.setPosition(transform.pos);
 }
 
 void Scene_Play::sCamera()
 {
-	auto& pTransform = player().get<CTransform>();
+	auto& pTransform = player().get<CTransform>(m_memoryPool);
 	m_cameraView.setCenter(pTransform.pos);
 	m_game->window().setView(m_cameraView);
 }
@@ -349,13 +358,15 @@ void Scene_Play::sRender()
 	auto visibleArea = Utils::visibleArea(m_cameraView);
 	for (Entity tile : m_entityManager.getEntities("tile"))
 	{
-		if (!Utils::isVisible(tile, visibleArea)) continue;
-		if (Utils::isBehindAnotherTile(tile, m_tileMap)) continue;
+		auto& tTrans = tile.get<CTransform>(m_memoryPool);
+		if (!Utils::isVisible(tTrans, visibleArea)) continue;
+		auto& tGrid = tile.get<CGridPosition>(m_memoryPool);
+		if (Utils::isBehindAnotherTile(tGrid, m_tileMap)) continue;
 
-		auto& animation = tile.get<CAnimation>().animation;
+		auto& animation = tile.get<CAnimation>(m_memoryPool).animation;
 		window.draw(animation.m_sprite);
 	}
 
-	auto& animation = player().get<CAnimation>().animation;
+	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
 	window.draw(animation.m_sprite);
 }

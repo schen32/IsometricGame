@@ -8,7 +8,7 @@ public:
 	int z = 0;
 
 	Grid3D() = default;
-	Grid3D(int x, int y, int z): x(x), y(y), z(z) {}
+	Grid3D(int ix, int iy, int iz): x(ix), y(iy), z(iz) {}
 
 	bool operator<(const Grid3D& other) const {
 		return std::tie(z, y, x) < std::tie(other.z, other.y, other.x);
