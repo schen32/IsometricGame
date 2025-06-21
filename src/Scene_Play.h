@@ -26,7 +26,7 @@ protected:
 	Grid3D					 m_numChunks3D = { 4, 4, 3 };
 	TileMap					 m_tileMap;
 	ChunkMap				 m_chunkMap;
-	Entity  m_selectedTile;
+	Entity					 m_selectedTile;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -40,7 +40,7 @@ protected:
 	void spawnChunk(float chunkX, float chunkY, float chunkZ);
 	void spawnTilesFromChunk(const CGridPosition& chunkPos, CTileChunk& chunkTiles);
 	void spawnTiles();
-	Entity& spawnTile(float gridX, float gridY, float gridZ);
+	Entity spawnTile(float gridX, float gridY, float gridZ);
 
 	Entity player();
 	void sDoAction(const Action& action);
