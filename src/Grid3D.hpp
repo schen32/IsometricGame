@@ -22,9 +22,17 @@ public:
 		return Grid3D(x + other.x, y + other.y, z + other.z);
 	}
 
+	Grid3D operator/(int other) const {
+		return Grid3D(x / other, y / other, z / other);
+	}
+
 	void operator +=(const Grid3D& other) {
 		x += other.x;
 		y += other.y;
 		z += other.z;
+	}
+
+	int volume() const {
+		return x * y * z;
 	}
 };

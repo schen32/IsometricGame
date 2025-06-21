@@ -9,6 +9,7 @@
 #include "ParticleSystem.hpp"
 
 using TileMap = std::map<Grid3D, Entity>;
+using ChunkMap = std::map<Grid3D, Entity>;
 
 class Scene_Play : public Scene
 {
@@ -20,8 +21,11 @@ protected:
 	bool					 m_playerDied = false;
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
-	Grid3D   				 m_gridSize3D = { 200, 200, 50 };
+	Grid3D   				 m_gridSize3D = { 250, 250, 50 };
+	Grid3D					 m_chunkSize3D = { 32, 32, 32 };
+	Grid3D					 m_numChunks3D = { 4, 4, 3 };
 	TileMap					 m_tileMap;
+	ChunkMap				 m_chunkMap;
 	Entity  m_selectedTile;
 
 	void init(const std::string& levelPath);
@@ -32,8 +36,11 @@ protected:
 	void onExitScene();
 	void update();
 	void spawnPlayer();
-	void spawnTiles(const std::string& filename);
-	void spawnTile(float gridX, float gridY, float gridZ, const Animation& animation);
+	void spawnChunks();
+	void spawnChunk(float chunkX, float chunkY, float chunkZ);
+	void spawnTilesFromChunk(const CGridPosition& chunkPos, CTileChunk& chunkTiles);
+	void spawnTiles();
+	Entity& spawnTile(float gridX, float gridY, float gridZ);
 
 	Entity player();
 	void sDoAction(const Action& action);

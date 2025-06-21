@@ -49,12 +49,12 @@ void Scene_Play::init(const std::string& levelPath)
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
-	const static size_t MAX_ENTITIES = 1024 * 1024;
+	const static size_t MAX_ENTITIES = 2048 * 2048;
 
 	m_entityManager = EntityManager();
 	m_memoryPool = MemoryPool(MAX_ENTITIES);
 	spawnPlayer();
-	spawnTiles(filename);
+	spawnChunks();
 	m_entityManager.update(m_memoryPool);
 }
 
@@ -67,7 +67,7 @@ Entity Scene_Play::player()
 
 void Scene_Play::spawnPlayer()
 {
-	auto p = m_entityManager.addEntity(m_memoryPool, "player", "playerCharacter");
+	auto p = m_entityManager.addEntity(m_memoryPool, "player", "PlayerCharacter");
 	m_playerDied = false;
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
@@ -78,15 +78,57 @@ void Scene_Play::spawnPlayer()
 	p.add<CInput>(m_memoryPool);
 }
 
-void Scene_Play::spawnTiles(const std::string& filename)
+void Scene_Play::spawnChunks()
+{
+	for (size_t i = 0; i < m_numChunks3D.x; i++)
+	{
+		for (size_t j = 0; j < m_numChunks3D.y; j++)
+		{
+			for (size_t k = 0; k < m_numChunks3D.z; k++)
+			{
+				spawnChunk(i, j, k);
+			}
+		}
+	}
+}
+
+void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
+{
+	auto chunk = m_entityManager.addEntity(m_memoryPool, "chunk", "TileChunk");
+
+	Grid3D gridPos(chunkX * m_chunkSize3D.x + m_chunkSize3D.x / 2,
+				   chunkY * m_chunkSize3D.y + m_chunkSize3D.y / 2,
+		           chunkZ * m_chunkSize3D.z + m_chunkSize3D.z / 2);
+	auto& chunkPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
+	auto& chunkTiles = chunk.add<CTileChunk>(m_memoryPool);
+
+	spawnTilesFromChunk(chunkPos, chunkTiles);
+	m_chunkMap[gridPos] = chunk;
+}
+
+void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CTileChunk& chunkTiles)
+{
+	chunkTiles.tiles.reserve(m_chunkSize3D.volume());
+
+	Grid3D cPos = chunkPos.pos;
+	Grid3D halfChunkSize = m_chunkSize3D / 2;
+	for (size_t i = cPos.x - halfChunkSize.x; i < cPos.x + halfChunkSize.x-1; i++)
+	{
+		for (size_t j = cPos.y - halfChunkSize.y; j < cPos.y + halfChunkSize.y-1; j++)
+		{
+			for (size_t k = cPos.z - halfChunkSize.z; k < cPos.z + halfChunkSize.z-1; k++)
+			{
+				chunkTiles.tiles.emplace_back(spawnTile(i, j, k));
+			}
+		}
+	}
+}
+
+void Scene_Play::spawnTiles()
 {
 	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(m_gridSize3D.x, m_gridSize3D.y);
 	const static int octaveCount = 6;
 	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, octaveCount);
-
-	auto& waterAni = m_game->assets().getAnimation("WaterTile");
-	auto& groundAni = m_game->assets().getAnimation("GroundTile");
-	auto& grassAni = m_game->assets().getAnimation("GrassTile");
 
 	for (size_t i = 0; i < perlinNoise.size(); ++i)
 	{
@@ -94,24 +136,27 @@ void Scene_Play::spawnTiles(const std::string& filename)
 		{
 			float noiseValue = perlinNoise[i][j];
 			float height = std::round(noiseValue * m_gridSize3D.z);
-
-			const static size_t waterLevel = 20;
-			const static size_t grassLevel = 24;
 			for (size_t k = height - 3; k <= height; k++)
 			{
-				if (k <= waterLevel)
-					spawnTile(i, j, k, waterAni);
-				else if (waterLevel < k && k < grassLevel)
-					spawnTile(i, j, k, groundAni);
-				else if (grassLevel <= k)
-					spawnTile(i, j, k, grassAni);
+				spawnTile(i, j, k);
 			}
 		}
 	}
 }
 
-void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const Animation& animation)
+Entity& Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 {
+	const static size_t waterLevel = 20;
+	const static size_t grassLevel = 24;
+	Animation animation;
+
+	if (gridZ <= waterLevel)
+		animation = m_game->assets().getAnimation("WaterTile");
+	else if (waterLevel < gridZ && gridZ < grassLevel)
+		animation = m_game->assets().getAnimation("GroundTile");
+	else if (grassLevel <= gridZ)
+		animation = m_game->assets().getAnimation("GrassTile");
+
 	auto tile = m_entityManager.addEntity(m_memoryPool, "tile", animation.m_name);
 	auto& tAni = tile.add<CAnimation>(m_memoryPool, animation, true);
 
@@ -121,6 +166,7 @@ void Scene_Play::spawnTile(float gridX, float gridY, float gridZ, const Animatio
 	m_tileMap[gridPos] = tile;
 
 	tile.add<CState>(m_memoryPool, "unselected");
+	return tile;
 }
 
 void Scene_Play::update()
@@ -143,7 +189,7 @@ void Scene_Play::update()
 
 void Scene_Play::sMovement()
 {
-	static const float playerSpeed = 2.0f;
+	static const float playerSpeed = 10.0f;
 
 	auto p = player();
 	auto& pInput = p.get<CInput>(m_memoryPool);
