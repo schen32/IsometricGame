@@ -81,9 +81,11 @@ void Scene_Play::buildVertexArraysForChunks()
 	if (!m_chunkChanged) return;
 	m_chunkChanged = false;
 
-	for (auto& [gridPos, chunk] : m_chunkMap)
+	for (Entity chunk : m_entityManager.getEntities("chunk"))
 	{
 		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
+		if (!chunkTiles.changed) continue;
+
 		auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
 		chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
 	}
@@ -380,8 +382,8 @@ void Scene_Play::sRender()
 	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
 	for (auto& [gridPos, chunk] : m_chunkMap)
 	{
-		// auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
-		// if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;
+		auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
+		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;
 
 		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
 		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
