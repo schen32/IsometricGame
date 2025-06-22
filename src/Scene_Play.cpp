@@ -48,7 +48,7 @@ void Scene_Play::init(const std::string& levelPath)
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
-	const static size_t MAX_CHUNKS = m_numChunks3D.volume() * m_chunkSize3D.volume() * 2;
+	const static size_t MAX_CHUNKS = m_numChunks3D.volume() * m_chunkSize3D.volume() * m_loadRadius;
 
 	m_entityManager = EntityManager();
 	m_memoryPool = MemoryPool(MAX_CHUNKS);
@@ -70,7 +70,7 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0, 0, 1);
+	Grid3D gridPos(0, 0, 0);
 	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
@@ -81,22 +81,9 @@ void Scene_Play::buildVertexArraysForChunks()
 	if (!m_chunkChanged) return;
 	m_chunkChanged = false;
 
-	for (Entity chunk : m_entityManager.getEntities("chunk"))
+	for (auto& [gridPos, chunk] : m_chunkMap)
 	{
 		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
-		auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
-		chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
-	}
-}
-
-void Scene_Play::buildVertexArraysForChangedChunks()
-{
-	for (Entity chunk : m_entityManager.getEntities("chunk"))
-	{
-		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
-		if (!chunkTiles.changed) continue;
-		chunkTiles.changed = false;
-
 		auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
 		chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
 	}
@@ -227,10 +214,10 @@ void Scene_Play::update()
 {
 	if (!m_paused)
 	{
-		m_entityManager.update(m_memoryPool);
-		buildVertexArraysForChunks();
 		spawnChunks();
 		despawnChunks();
+		m_entityManager.update(m_memoryPool);
+		buildVertexArraysForChunks();
 		sMovement();
 		sCollision();
 		sCamera();
@@ -391,7 +378,7 @@ void Scene_Play::sRender()
 	static const float RENDER_DIST_SQUARED = RENDER_DIST * RENDER_DIST;
 
 	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
-	for (Entity chunk : m_entityManager.getEntities("chunk"))
+	for (auto& [gridPos, chunk] : m_chunkMap)
 	{
 		// auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
 		// if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;

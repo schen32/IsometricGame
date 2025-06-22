@@ -57,7 +57,6 @@ public:
 
 	void spawnChunks();
 	void despawnChunks();
-	void buildVertexArraysForChangedChunks();
 
 	Scene_Play() = default;
 	Scene_Play(GameEngine* gameEngine, const std::string& levelPath = "");
