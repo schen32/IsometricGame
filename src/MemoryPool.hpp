@@ -7,7 +7,7 @@
 using ComponentVectorTuple = std::tuple<
 	std::vector<std::optional<CTransform>>,
 	std::vector<std::optional<CGridPosition>>,
-	std::vector<std::optional<CTileChunk>>,
+	std::vector<std::optional<CChunkTiles>>,
 	std::vector<std::optional<CTileRenderInfo>>,
 	std::vector<std::optional<CVertexArray>>,
 	std::vector<std::optional<CInput>>,

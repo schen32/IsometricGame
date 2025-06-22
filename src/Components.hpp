@@ -34,13 +34,13 @@ public:
 	CGridPosition(const Grid3D& p): pos(p) {}
 };
 
-class CTileChunk
+class CChunkTiles
 {
 public:
 	std::vector<Entity> tiles;
 
-	CTileChunk() = default;
-	CTileChunk(const std::vector<Entity>& t) : tiles(t) {}
+	CChunkTiles() = default;
+	CChunkTiles(const std::vector<Entity>& t) : tiles(t) {}
 };
 
 class CTileRenderInfo

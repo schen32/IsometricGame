@@ -1,0 +1,2 @@
+Hide unviewed tiles in chunk VertexArray
+Hide chunks based on distance to player instead of window visibility

@@ -57,6 +57,7 @@ void Scene_Play::loadLevel(const std::string& filename)
 	// spawnTiles();
 	spawnChunks();
 	m_entityManager.update(m_memoryPool);
+	buildVertexArraysForChunks();
 }
 
 Entity Scene_Play::player()
@@ -77,6 +78,16 @@ void Scene_Play::spawnPlayer()
 	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
+}
+
+void Scene_Play::buildVertexArraysForChunks()
+{
+	for (Entity chunk : m_entityManager.getEntities("chunk"))
+	{
+		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
+		auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
+		chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
+	}
 }
 
 void Scene_Play::spawnChunks()
@@ -103,15 +114,12 @@ void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
 
 	chunk.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	auto& chunkPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
-	auto& chunkTiles = chunk.add<CTileChunk>(m_memoryPool);
+	auto& chunkTiles = chunk.add<CChunkTiles>(m_memoryPool);
 
 	spawnTilesFromChunk(chunkPos, chunkTiles);
-
-	auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
-	chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
 }
 
-void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CTileChunk& chunkTiles)
+void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles& chunkTiles)
 {
 	chunkTiles.tiles.reserve(m_chunkSize3D.volume());
 
@@ -171,6 +179,7 @@ Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 		sf::IntRect(tileTexPos, sf::Vector2i(m_gridCellSize)));
 	tile.add<CGridPosition>(m_memoryPool, gridPos);
 
+	m_tileMap.insert({ gridPos, tile });
 	return tile;
 }
 
@@ -341,7 +350,7 @@ void Scene_Play::sRender()
 	window.draw(animation.m_sprite);
 }
 
-sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, const sf::Texture& tileset)
+sf::VertexArray Scene_Play::buildVertexArrayForChunk(CChunkTiles& tileChunk, const sf::Texture& tileset)
 {
 	auto& tiles = tileChunk.tiles;
 	sf::VertexArray va(sf::PrimitiveType::Triangles);
@@ -350,6 +359,9 @@ sf::VertexArray Scene_Play::buildVertexArrayForChunk(CTileChunk& tileChunk, cons
 	for (size_t i = 0; i < tiles.size(); ++i)
 	{
 		Entity& tile = tiles[i];
+		auto& tileGridPos = tile.get<CGridPosition>(m_memoryPool).pos;
+		if (m_tileMap.find(tileGridPos + Grid3D(1, 1, 1)) != m_tileMap.end()) continue;
+
 		auto& tileInfo = tile.get<CTileRenderInfo>(m_memoryPool);
 
 		const sf::Vector2f& pos = tileInfo.position;
