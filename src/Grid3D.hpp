@@ -2,6 +2,7 @@
 #include <tuple>
 #include <sstream>
 #include <string>
+#include <cmath>
 
 class Grid3D {
 public:
@@ -16,6 +17,17 @@ public:
 		std::ostringstream oss;
 		oss << "(" << x << ", " << y << ", " << z << ")";
 		return oss.str();
+	}
+
+	float distTo(const Grid3D& other) const {
+		return std::sqrt(distToSquared(other));
+	}
+	
+	float distToSquared(const Grid3D& other) const {
+		float dx = x - other.x;
+		float dy = y - other.y;
+		float dz = z - other.z;
+		return dx * dx + dy * dy + dz * dz;
 	}
 
 	bool operator<(const Grid3D& other) const {

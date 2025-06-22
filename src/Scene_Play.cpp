@@ -91,11 +91,11 @@ void Scene_Play::buildVertexArraysForChunks()
 
 void Scene_Play::spawnChunks()
 {
-	for (size_t i = 0; i < m_numChunks3D.x; i++)
+	for (int i = -m_numChunks3D.x + 1; i <= 0; i++)
 	{
-		for (size_t j = 0; j < m_numChunks3D.y; j++)
+		for (int j = -m_numChunks3D.y + 1; j <= 0; j++)
 		{
-			for (size_t k = 0; k < m_numChunks3D.z; k++)
+			for (int k = -m_numChunks3D.z + 1; k <= 0; k++)
 			{
 				spawnChunk(i, j, k);
 			}
@@ -124,11 +124,11 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles&
 
 	Grid3D cPos = chunkPos.pos;
 	Grid3D halfChunkSize = m_chunkSize3D / 2;
-	for (size_t i = cPos.x - halfChunkSize.x; i < cPos.x + halfChunkSize.x; i++)
+	for (int i = cPos.x - halfChunkSize.x; i < cPos.x + halfChunkSize.x; i++)
 	{
-		for (size_t j = cPos.y - halfChunkSize.y; j < cPos.y + halfChunkSize.y; j++)
+		for (int j = cPos.y - halfChunkSize.y; j < cPos.y + halfChunkSize.y; j++)
 		{
-			for (size_t k = cPos.z - halfChunkSize.z; k < cPos.z + halfChunkSize.z; k++)
+			for (int k = cPos.z - halfChunkSize.z; k < cPos.z + halfChunkSize.z; k++)
 			{
 				chunkTiles.tiles.emplace_back(spawnTile(i, j, k));
 			}
@@ -142,13 +142,13 @@ void Scene_Play::spawnTiles()
 	const static int octaveCount = 6;
 	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, octaveCount);
 
-	for (size_t i = 0; i < perlinNoise.size(); ++i)
+	for (int i = 0; i < perlinNoise.size(); ++i)
 	{
-		for (size_t j = 0; j < perlinNoise[i].size(); ++j)
+		for (int j = 0; j < perlinNoise[i].size(); ++j)
 		{
 			float noiseValue = perlinNoise[i][j];
 			float height = std::round(noiseValue * m_gridSize3D.z);
-			for (size_t k = height - 3; k <= height; k++)
+			for (int k = height - 3; k <= height; k++)
 			{
 				spawnTile(i, j, k);
 			}
@@ -340,11 +340,14 @@ void Scene_Play::sRender()
 	sf::Color clearColor = sf::Color(204, 226, 225);
 	window.clear(clearColor);
 
-	auto visibleArea = Utils::visibleArea(m_cameraView);
+	static const float RENDER_DIST = 50.0f;
+	static const float RENDER_DIST_SQUARED = RENDER_DIST * RENDER_DIST;
+
+	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
 	for (Entity chunk : m_entityManager.getEntities("chunk"))
 	{
-		auto& cTrans = chunk.get<CTransform>(m_memoryPool);
-		if (!Utils::isVisible(cTrans, visibleArea)) continue;
+		auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;		
+		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;
 
 		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
 		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
@@ -355,7 +358,6 @@ void Scene_Play::sRender()
 
 	window.setView(window.getDefaultView());
 
-	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
 	sf::Text pGridPosText(m_game->assets().getFont("FutureMillennium"), pGridPos.toString());
 	window.draw(pGridPosText);
 
