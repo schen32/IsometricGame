@@ -44,6 +44,7 @@ void Scene_Play::init(const std::string& levelPath)
 	m_game->window().setView(m_cameraView);
 
 	loadLevel(levelPath);
+	generateHeightMap();
 }
 
 void Scene_Play::loadLevel(const std::string& filename)
@@ -54,6 +55,28 @@ void Scene_Play::loadLevel(const std::string& filename)
 	m_memoryPool = MemoryPool(MAX_CHUNKS);
 	spawnPlayer();
 	m_entityManager.update(m_memoryPool);
+}
+
+void Scene_Play::generateHeightMap()
+{
+	int w = m_gridSize3D.x, h = m_gridSize3D.y, maxZ = int(m_gridSize3D.z);
+
+	// flat storage
+	m_heightMap.clear();
+	m_heightMap.reserve(w * h);
+
+	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(w, h);
+	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, 6);
+
+	for (int j = 0; j < h; ++j)            // note: row (y) outer for cache
+	{
+		auto& row = perlinNoise[j];
+		for (int i = 0; i < w; ++i)        // column (x) inner
+		{
+			float v = row[i] * maxZ;
+			m_heightMap.emplace_back(int(v + 0.5f));  // round
+		}
+	}
 }
 
 Entity Scene_Play::player()
@@ -70,7 +93,7 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0, 0, 0);
+	Grid3D gridPos(0, 0, m_chunkSize3D.z);
 	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
@@ -132,7 +155,6 @@ void Scene_Play::despawnChunks()
 		}
 		chunk.destroy(m_memoryPool);
 		m_chunkMap.erase(chunkPos);
-		m_chunkChanged = true;
 	}
 }
 
@@ -155,45 +177,34 @@ Entity Scene_Play::spawnChunk(const Grid3D& chunkPos)
 
 void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTiles& chunkTiles)
 {
-	chunkTiles.tiles.reserve(m_chunkSize3D.volume());
-
+	int w = m_gridSize3D.x, h = m_gridSize3D.y;
 	Grid3D cPos = chunkGridPos.pos;
-	for (int i = cPos.x; i < cPos.x + m_chunkSize3D.x; i++)
+
+	for (int x = cPos.x; x < cPos.x + m_chunkSize3D.x; ++x)
 	{
-		for (int j = cPos.y; j < cPos.y + m_chunkSize3D.y; j++)
+		for (int y = cPos.y; y < cPos.y + m_chunkSize3D.y; ++y)
 		{
-			for (int k = cPos.z; k < cPos.z + m_chunkSize3D.z; k++)
+			size_t mapX = x, mapY = y;
+			// make sure x,y in [0..w),[0..h)
+			if (mapX < 0 || mapX >= w || mapY < 0 || mapY >= h) continue;
+
+			int columnHeight = m_heightMap[mapY * w + mapX];
+
+			for (int z = cPos.z; z < cPos.z + m_chunkSize3D.z; ++z)
 			{
-				chunkTiles.tiles.emplace_back(spawnTile(i, j, k));
+				if (z > columnHeight)
+					break;   // no taller tiles
+
+				chunkTiles.tiles.emplace_back(spawnTile(x, y, z));
 			}
 		}
 	}
 }
 
-/*void Scene_Play::spawnTiles()
-{
-	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(m_gridSize3D.x, m_gridSize3D.y);
-	const static int octaveCount = 6;
-	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, octaveCount);
-
-	for (int i = 0; i < perlinNoise.size(); ++i)
-	{
-		for (int j = 0; j < perlinNoise[i].size(); ++j)
-		{
-			float noiseValue = perlinNoise[i][j];
-			float height = std::round(noiseValue * m_gridSize3D.z);
-			for (int k = height - 3; k <= height; k++)
-			{
-				spawnTile(i, j, k);
-			}
-		}
-	}
-}*/
-
 Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 {
-	const static size_t waterLevel = 0;
-	const static size_t grassLevel = 4;
+	const static size_t waterLevel = 20;
+	const static size_t grassLevel = 24;
 
 	sf::Vector2i tileTexPos = (gridZ <= waterLevel) ? sf::Vector2i(0, 10) :
 							  (gridZ <= grassLevel) ? sf::Vector2i(0, 0) :

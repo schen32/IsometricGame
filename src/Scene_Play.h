@@ -11,6 +11,7 @@
 
 using TileMap = std::map<Grid3D, Entity>;
 using ChunkMap = std::map<Grid3D, Entity>;
+using HeightMap = std::vector<float>;
 
 class Scene_Play : public Scene
 {
@@ -22,16 +23,18 @@ public:
 	bool					 m_playerDied = false;
 	std::string				 m_musicName;
 	Vec2f					 m_gridCellSize = { 32, 32 };
-	Grid3D   				 m_gridSize3D = { 250, 250, 50 };
+	Grid3D   				 m_gridSize3D = { 1000, 1000, 50 };
 	Grid3D					 m_chunkSize3D = { 32, 32, 32 };
 	Grid3D					 m_numChunks3D = { 4, 4, 4 };
 	TileMap					 m_tileMap;
 	ChunkMap				 m_chunkMap;
-	int						 m_loadRadius = 2;
+	int						 m_loadRadius = 3;
 	bool					 m_chunkChanged = false;
+	HeightMap				 m_heightMap;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
+	void generateHeightMap();
 
 	void onEnd();
 	void onEnterScene();

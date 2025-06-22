@@ -97,7 +97,7 @@ public:
 	void destroy(size_t entityId)
 	{
 		m_active[entityId] = false;
-		m_freeIndices.push_back(entityId);
+		m_freeIndices.emplace_back(entityId);
 		m_numEntities--;
 	}
 };
