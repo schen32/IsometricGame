@@ -121,7 +121,7 @@ void Scene_Play::spawnChunks()
 	{
 		for (int dy = -m_loadRadius; dy <= m_loadRadius; ++dy)
 		{
-			for (int dz = -m_loadRadius; dz < 0; ++dz)
+			for (int dz = -m_loadRadius; dz <= m_loadRadius; ++dz)
 			{
 				Grid3D chunkPos = playerChunkPos + Grid3D(dx, dy, dz);
 				if (m_chunkMap.find(chunkPos) != m_chunkMap.end()) continue;
@@ -142,9 +142,9 @@ void Scene_Play::despawnChunks()
 		auto chunkPos = Utils::gridToChunkPos(chunk.get<CGridPosition>(m_memoryPool), m_chunkSize3D);
 		int dx = std::abs(chunkPos.x - playerChunkPos.x);
 		int dy = std::abs(chunkPos.y - playerChunkPos.y);
-		int dz = chunkPos.z - playerChunkPos.z;
+		int dz = std::abs(chunkPos.z - playerChunkPos.z);
 
-		if (!(dx > m_loadRadius || dy > m_loadRadius || dz >= 0)) continue;
+		if (!(dx > m_loadRadius || dy > m_loadRadius || dz > m_loadRadius)) continue;
 
 		auto& tileChunk = chunk.get<CChunkTiles>(m_memoryPool);
 		for (Entity tile : tileChunk.tiles)
@@ -206,10 +206,14 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTi
 Entity Scene_Play::spawnTile(Grid3D& chunkPos)
 {
 	const static int grassLevel = 24;
+	const static int snowLevel = 36;
 
-	sf::Vector2i tileTexPos = (chunkPos.z <= m_waterLevel) ? sf::Vector2i(0, 10) :
-							  (chunkPos.z <= grassLevel) ? sf::Vector2i(0, 0) :
-											  sf::Vector2i(0, 2);
+	sf::Vector2i tileTexPos;
+	if (chunkPos.z <= m_waterLevel) tileTexPos = sf::Vector2i(0, 10);
+	else if (m_waterLevel < chunkPos.z && chunkPos.z <= grassLevel) tileTexPos = sf::Vector2i(9, 0);
+	else if (grassLevel < chunkPos.z && chunkPos.z <= snowLevel) tileTexPos = sf::Vector2i(0, 2);
+	else if (snowLevel < chunkPos.z) tileTexPos = sf::Vector2i(0, 2);
+
 	tileTexPos.x *= m_gridCellSize.x;
 	tileTexPos.y *= m_gridCellSize.y;
 
