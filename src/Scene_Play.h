@@ -31,6 +31,7 @@ public:
 	int						 m_loadRadius = 3;
 	bool					 m_chunkChanged = false;
 	HeightMap				 m_heightMap;
+	int						 m_waterLevel = 20;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -44,7 +45,7 @@ public:
 	Entity spawnChunk(const Grid3D& chunkPos);
 	void spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles& chunkTiles);
 	void spawnTiles();
-	Entity spawnTile(float gridX, float gridY, float gridZ);
+	Entity spawnTile(Grid3D& chunkPos);
 
 	Entity player();
 	void sDoAction(const Action& action);

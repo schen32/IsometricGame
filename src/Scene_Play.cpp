@@ -194,32 +194,32 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTi
 			{
 				if (z > columnHeight)
 					break;   // no taller tiles
-
-				chunkTiles.tiles.emplace_back(spawnTile(x, y, z));
+				if (z < m_waterLevel)
+					z = m_waterLevel;
+				Grid3D gridPos(x, y, z);
+				chunkTiles.tiles.emplace_back(spawnTile(gridPos));
 			}
 		}
 	}
 }
 
-Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
+Entity Scene_Play::spawnTile(Grid3D& chunkPos)
 {
-	const static size_t waterLevel = 20;
-	const static size_t grassLevel = 24;
+	const static int grassLevel = 24;
 
-	sf::Vector2i tileTexPos = (gridZ <= waterLevel) ? sf::Vector2i(0, 10) :
-							  (gridZ <= grassLevel) ? sf::Vector2i(0, 0) :
+	sf::Vector2i tileTexPos = (chunkPos.z <= m_waterLevel) ? sf::Vector2i(0, 10) :
+							  (chunkPos.z <= grassLevel) ? sf::Vector2i(0, 0) :
 											  sf::Vector2i(0, 2);
 	tileTexPos.x *= m_gridCellSize.x;
 	tileTexPos.y *= m_gridCellSize.y;
 
 	auto tile = m_entityManager.addEntity(m_memoryPool, "tile", "Tile");
-	Grid3D gridPos(gridX, gridY, gridZ);
 	
-	tile.add<CTileRenderInfo>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize),
+	tile.add<CTileRenderInfo>(m_memoryPool, Utils::gridToIsometric(chunkPos, m_gridCellSize),
 		sf::IntRect(tileTexPos, sf::Vector2i(m_gridCellSize)));
-	tile.add<CGridPosition>(m_memoryPool, gridPos);
+	tile.add<CGridPosition>(m_memoryPool, chunkPos);
 
-	m_tileMap.insert({ gridPos, tile });
+	m_tileMap.insert({ chunkPos, tile });
 	return tile;
 }
 
