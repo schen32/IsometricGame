@@ -161,14 +161,10 @@ Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 {
 	const static size_t waterLevel = 20;
 	const static size_t grassLevel = 24;
-	sf::Vector2i tileTexPos;
 
-	if (gridZ <= waterLevel)
-		tileTexPos = sf::Vector2i(0, 10);
-	if (waterLevel < gridZ && gridZ < grassLevel)
-		tileTexPos = sf::Vector2i(0, 0);
-	if (grassLevel <= gridZ)
-		tileTexPos = sf::Vector2i(0, 2);
+	sf::Vector2i tileTexPos = (gridZ <= 20) ? sf::Vector2i(0, 10) :
+							  (gridZ <= 24) ? sf::Vector2i(0, 0) :
+											  sf::Vector2i(0, 2);
 	tileTexPos.x *= m_gridCellSize.x;
 	tileTexPos.y *= m_gridCellSize.y;
 

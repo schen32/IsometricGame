@@ -41,9 +41,10 @@ public:
 		m_tags.resize(maxEntities);
 		m_names.resize(maxEntities);
 		m_active.resize(maxEntities);
+		m_freeIndices.reserve(maxEntities);
 		for (size_t i = 0; i < m_maxEntities; i++)
 		{
-			m_freeIndices.push_back(i);
+			m_freeIndices.emplace_back(i);
 		}
 	}
 

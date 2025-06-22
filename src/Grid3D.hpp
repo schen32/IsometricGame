@@ -35,4 +35,10 @@ public:
 	int volume() const {
 		return x * y * z;
 	}
+
+	struct Grid3DHash {
+		size_t operator()(const Grid3D& g) const {
+			return std::hash<int>()(g.x) ^ (std::hash<int>()(g.y) << 1) ^ (std::hash<int>()(g.z) << 2);
+		}
+	};
 };
