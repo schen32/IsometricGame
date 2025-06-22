@@ -353,52 +353,43 @@ void Scene_Play::sRender()
 sf::VertexArray Scene_Play::buildVertexArrayForChunk(CChunkTiles& tileChunk, const sf::Texture& tileset)
 {
 	auto& tiles = tileChunk.tiles;
-	sf::VertexArray va(sf::PrimitiveType::Triangles);
-	va.resize(tiles.size() * 6); // 6 vertices per tile
+	sf::VertexArray va(sf::PrimitiveType::Triangles); // No pre-sizing for dynamic appending
 
 	for (size_t i = 0; i < tiles.size(); ++i)
 	{
 		Entity& tile = tiles[i];
 		auto& tileGridPos = tile.get<CGridPosition>(m_memoryPool).pos;
-		if (m_tileMap.find(tileGridPos + Grid3D(1, 1, 1)) != m_tileMap.end()) continue;
+
+		// Optionally skip tiles that are fully enclosed
+		if (m_tileMap.find(tileGridPos + Grid3D(1, 1, 1)) != m_tileMap.end())
+			continue;
 
 		auto& tileInfo = tile.get<CTileRenderInfo>(m_memoryPool);
-
 		const sf::Vector2f& pos = tileInfo.position;
-		const sf::Vector2f& origin = m_gridCellSize / 2;
+		const sf::Vector2f origin = m_gridCellSize / 2.f;
 		const sf::IntRect& texRect = tileInfo.textureRect;
 
-		// Top-left corner of the tile in world space
+		// Vertex positions in world space
 		sf::Vector2f topLeft = pos - origin;
-		sf::Vector2f topRight = topLeft + sf::Vector2f(texRect.size.x, 0.f);
-		sf::Vector2f bottomRight = topLeft + sf::Vector2f(texRect.size.x, texRect.size.y);
-		sf::Vector2f bottomLeft = topLeft + sf::Vector2f(0.f, texRect.size.y);
+		sf::Vector2f topRight = { topLeft.x + texRect.size.x, topLeft.y };
+		sf::Vector2f bottomRight = { topLeft.x + texRect.size.x, topLeft.y + texRect.size.y };
+		sf::Vector2f bottomLeft = { topLeft.x, topLeft.y + texRect.size.y };
 
 		// Texture coordinates
-		sf::Vector2f texTopLeft = { float(texRect.position.x), float(texRect.position.y) };
-		sf::Vector2f texTopRight = { float(texRect.position.x + texRect.size.x), float(texRect.position.y) };
-		sf::Vector2f texBottomRight = { float(texRect.position.x + texRect.size.x), float(texRect.position.y + texRect.size.y) };
-		sf::Vector2f texBottomLeft = { float(texRect.position.x), float(texRect.position.y + texRect.size.y) };
-
-		size_t vi = i * 6;
+		sf::Vector2f texTopLeft(texRect.position.x, texRect.position.y);
+		sf::Vector2f texTopRight(texRect.position.x + texRect.size.x, texRect.position.y);
+		sf::Vector2f texBottomRight(texRect.position.x + texRect.size.x, texRect.position.y + texRect.size.y);
+		sf::Vector2f texBottomLeft(texRect.position.x, texRect.position.y + texRect.size.y);
 
 		// First triangle
-		va[vi + 0].position = topLeft;
-		va[vi + 1].position = topRight;
-		va[vi + 2].position = bottomRight;
-
-		va[vi + 0].texCoords = texTopLeft;
-		va[vi + 1].texCoords = texTopRight;
-		va[vi + 2].texCoords = texBottomRight;
+		va.append(sf::Vertex({ topLeft, sf::Color::White, texTopLeft }));
+		va.append(sf::Vertex({ topRight, sf::Color::White, texTopRight }));
+		va.append(sf::Vertex({ bottomRight, sf::Color::White, texBottomRight }));
 
 		// Second triangle
-		va[vi + 3].position = bottomRight;
-		va[vi + 4].position = bottomLeft;
-		va[vi + 5].position = topLeft;
-
-		va[vi + 3].texCoords = texBottomRight;
-		va[vi + 4].texCoords = texBottomLeft;
-		va[vi + 5].texCoords = texTopLeft;
+		va.append(sf::Vertex({ bottomRight, sf::Color::White, texBottomRight }));
+		va.append(sf::Vertex({ bottomLeft, sf::Color::White, texBottomLeft }));
+		va.append(sf::Vertex({ topLeft, sf::Color::White, texTopLeft }));
 	}
 
 	return va;
