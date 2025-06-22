@@ -31,14 +31,13 @@ void Scene_Play::init(const std::string& levelPath)
 
 	registerKeyAction(sf::Keyboard::Scan::Escape, "ESCAPE");
 
+	registerKeyAction(sf::Keyboard::Scan::Space, "UP");
+	registerKeyAction(sf::Keyboard::Scan::LShift, "DOWN");
+
 	registerKeyAction(sf::Keyboard::Scan::A, "LEFT");
 	registerKeyAction(sf::Keyboard::Scan::D, "RIGHT");
-	registerKeyAction(sf::Keyboard::Scan::W, "UP");
-	registerKeyAction(sf::Keyboard::Scan::S, "DOWN");
-	registerKeyAction(sf::Keyboard::Scan::Left, "LEFT");
-	registerKeyAction(sf::Keyboard::Scan::Right, "RIGHT");
-	registerKeyAction(sf::Keyboard::Scan::Up, "UP");
-	registerKeyAction(sf::Keyboard::Scan::Down, "DOWN");
+	registerKeyAction(sf::Keyboard::Scan::W, "FORWARD");
+	registerKeyAction(sf::Keyboard::Scan::S, "BACKWARD");
 
 	m_cameraView.setSize(sf::Vector2f(width(), height()));
 	m_cameraView.zoom(1.0f);
@@ -199,27 +198,28 @@ void Scene_Play::update()
 
 void Scene_Play::sMovement()
 {
-	static const float playerSpeed = 10.0f;
+	static const float moveStep = 0.5f;
 
 	auto p = player();
-	auto& pInput = p.get<CInput>(m_memoryPool);
-	auto& pTransform = p.get<CTransform>(m_memoryPool);
+	auto& input = p.get<CInput>(m_memoryPool);
+	auto& transform = p.get<CTransform>(m_memoryPool);
+	auto& grid = p.get<CGridPosition>(m_memoryPool);
 
-	pTransform.velocity = { 0.f, 0.f };
+	Grid3D delta = { 0, 0, 0 };
 
-	if (pInput.left)  pTransform.velocity.x -= 1.f;
-	if (pInput.right) pTransform.velocity.x += 1.f;
-	if (pInput.up)    pTransform.velocity.y -= 1.f;
-	if (pInput.down)  pTransform.velocity.y += 1.f;
+	if (input.forward) { delta.x -= moveStep; delta.y -= moveStep; } // NW
+	if (input.backward) { delta.x += moveStep; delta.y += moveStep; } // SE
+	if (input.left) { delta.x -= moveStep; delta.y += moveStep; } // SW
+	if (input.right) { delta.x += moveStep; delta.y -= moveStep; } // NE
+	if (input.up) { delta.z += moveStep; } // UP
+	if (input.down) { delta.z -= moveStep; } // DOWN
 
-	// Normalize if necessary
-	if (pTransform.velocity.x != 0.f || pTransform.velocity.y != 0.f)
-	{
-		pTransform.velocity = pTransform.velocity.normalize() * playerSpeed;
+	if (!(delta == Grid3D{ 0, 0, 0 })) {
+		grid.pos += delta;
+
+		transform.prevPos = transform.pos;
+		transform.pos = Utils::gridToIsometric(grid.pos, m_gridCellSize);
 	}
-
-	pTransform.prevPos = pTransform.pos;
-	pTransform.pos += pTransform.velocity;
 }
 
 void Scene_Play::sAI()
@@ -255,6 +255,10 @@ void Scene_Play::sDoAction(const Action& action)
 			pInput.up = true;
 		else if (action.m_name == "DOWN")
 			pInput.down = true;
+		if (action.m_name == "FORWARD")
+			pInput.forward = true;
+		else if (action.m_name == "BACKWARD")
+			pInput.backward = true;
 		else if (action.m_name == "ESCAPE")
 		{
 			m_game->changeScene("MENU", std::make_shared<Scene_Menu>(m_game));
@@ -288,6 +292,10 @@ void Scene_Play::sDoAction(const Action& action)
 			pInput.up = false;
 		else if (action.m_name == "DOWN")
 			pInput.down = false;
+		if (action.m_name == "FORWARD")
+			pInput.forward = false;
+		else if (action.m_name == "BACKWARD")
+			pInput.backward = false;
 	}
 }
 
@@ -344,6 +352,14 @@ void Scene_Play::sRender()
 
 	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
 	window.draw(animation.m_sprite);
+
+	window.setView(window.getDefaultView());
+
+	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
+	sf::Text pGridPosText(m_game->assets().getFont("FutureMillennium"), pGridPos.toString());
+	window.draw(pGridPosText);
+
+	window.setView(m_cameraView);
 }
 
 sf::VertexArray Scene_Play::buildVertexArrayForChunk(CChunkTiles& tileChunk, const sf::Texture& tileset)

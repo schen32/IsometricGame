@@ -70,6 +70,8 @@ public:
 	bool left = false;
 	bool right = false;
 	bool down = false;
+	bool forward = false;
+	bool backward = false;
 
 	CInput() = default;
 };

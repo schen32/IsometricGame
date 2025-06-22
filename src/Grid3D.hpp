@@ -1,14 +1,22 @@
 #pragma once
 #include <tuple>
+#include <sstream>
+#include <string>
 
 class Grid3D {
 public:
-	int x = 0;
-	int y = 0;
-	int z = 0;
+	float x = 0;
+	float y = 0;
+	float z = 0;
 
 	Grid3D() = default;
-	Grid3D(int ix, int iy, int iz): x(ix), y(iy), z(iz) {}
+	Grid3D(float ix, float iy, float iz): x(ix), y(iy), z(iz) {}
+
+	std::string toString() const {
+		std::ostringstream oss;
+		oss << "(" << x << ", " << y << ", " << z << ")";
+		return oss.str();
+	}
 
 	bool operator<(const Grid3D& other) const {
 		return std::tie(z, y, x) < std::tie(other.z, other.y, other.x);
@@ -22,7 +30,7 @@ public:
 		return Grid3D(x + other.x, y + other.y, z + other.z);
 	}
 
-	Grid3D operator/(int other) const {
+	Grid3D operator/(float other) const {
 		return Grid3D(x / other, y / other, z / other);
 	}
 
@@ -32,13 +40,13 @@ public:
 		z += other.z;
 	}
 
-	int volume() const {
+	float volume() const {
 		return x * y * z;
 	}
 
 	struct Grid3DHash {
 		size_t operator()(const Grid3D& g) const {
-			return std::hash<int>()(g.x) ^ (std::hash<int>()(g.y) << 1) ^ (std::hash<int>()(g.z) << 2);
+			return std::hash<float>()(g.x) ^ (std::hash<float>()(g.y) << 1) ^ (std::hash<float>()(g.z) << 2);
 		}
 	};
 };
