@@ -103,6 +103,12 @@ void Scene_Play::spawnChunks()
 	}
 }
 
+void Scene_Play::despawnChunks()
+{
+
+}
+
+
 void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
 {
 	auto chunk = m_entityManager.addEntity(m_memoryPool, "chunk", "TileChunk");
@@ -157,11 +163,11 @@ void Scene_Play::spawnTiles()
 
 Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 {
-	const static size_t waterLevel = 20;
-	const static size_t grassLevel = 24;
+	const static size_t waterLevel = 0;
+	const static size_t grassLevel = 4;
 
-	sf::Vector2i tileTexPos = (gridZ <= 20) ? sf::Vector2i(0, 10) :
-							  (gridZ <= 24) ? sf::Vector2i(0, 0) :
+	sf::Vector2i tileTexPos = (gridZ <= waterLevel) ? sf::Vector2i(0, 10) :
+							  (gridZ <= grassLevel) ? sf::Vector2i(0, 0) :
 											  sf::Vector2i(0, 2);
 	tileTexPos.x *= m_gridCellSize.x;
 	tileTexPos.y *= m_gridCellSize.y;
@@ -182,7 +188,8 @@ void Scene_Play::update()
 	if (!m_paused)
 	{
 		m_entityManager.update(m_memoryPool);
-		sAI();
+		// spawnChunks();
+		despawnChunks();
 		sMovement();
 		sCollision();
 		sCamera();
@@ -350,6 +357,11 @@ void Scene_Play::sRender()
 
 		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
 		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
+
+		sf::Text cPosText(m_game->assets().getFont("FutureMillennium"),
+			Utils::gridToChunkPos(cGridPos, m_chunkSize3D).toString());
+		cPosText.setPosition(chunk.get<CTransform>(m_memoryPool).pos);
+		window.draw(cPosText);
 	}
 
 	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
@@ -359,6 +371,11 @@ void Scene_Play::sRender()
 
 	sf::Text pGridPosText(m_game->assets().getFont("FutureMillennium"), pGridPos.toString());
 	window.draw(pGridPosText);
+
+	sf::Text cPosText(m_game->assets().getFont("FutureMillennium"),
+		Utils::gridToChunkPos(pGridPos, m_chunkSize3D).toString());
+	cPosText.setPosition(sf::Vector2f(0, height() * 0.05f));
+	window.draw(cPosText);
 
 	window.setView(m_cameraView);
 }

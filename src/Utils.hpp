@@ -10,6 +10,21 @@ class Utils
 public:
 	Utils() = default;
 
+	static Grid3D gridToChunkPos(const CGridPosition& gridPosition, const Grid3D& chunkSize)
+	{
+		auto& gridPos = gridPosition.pos;
+
+		return {
+			divFloor(gridPos.x, chunkSize.x),
+			divFloor(gridPos.y, chunkSize.y),
+			divFloor(gridPos.z, chunkSize.z)
+		};
+	}
+
+	static float divFloor(int a, int b) {
+		return (a >= 0) ? (a / b) : ((a - b + 1) / b);
+	}
+
 	static uint32_t lehmer64(uint64_t& seed)
 	{
 		seed *= 0xda942042e4dd58b5ULL;

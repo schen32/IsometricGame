@@ -25,6 +25,7 @@ public:
 	Grid3D					 m_chunkSize3D = { 32, 32, 32 };
 	Grid3D					 m_numChunks3D = { 4, 4, 4 };
 	TileMap					 m_tileMap;
+	ChunkMap				 m_chunkMap;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -34,7 +35,6 @@ public:
 	void onExitScene();
 	void update();
 	void spawnPlayer();
-	void spawnChunks();
 	void spawnChunk(float chunkX, float chunkY, float chunkZ);
 	void spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles& chunkTiles);
 	void spawnTiles();
@@ -51,6 +51,9 @@ public:
 	void sCamera();
 	void sGui();
 	void sSelect();
+
+	void spawnChunks();
+	void despawnChunks();
 
 	Scene_Play() = default;
 	Scene_Play(GameEngine* gameEngine, const std::string& levelPath = "");
