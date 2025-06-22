@@ -38,6 +38,7 @@ class CChunkTiles
 {
 public:
 	std::vector<Entity> tiles;
+	bool changed = false;
 
 	CChunkTiles() = default;
 	CChunkTiles(const std::vector<Entity>& t) : tiles(t) {}

@@ -53,10 +53,7 @@ void Scene_Play::loadLevel(const std::string& filename)
 	m_entityManager = EntityManager();
 	m_memoryPool = MemoryPool(MAX_CHUNKS);
 	spawnPlayer();
-	// spawnTiles();
-	spawnChunks();
 	m_entityManager.update(m_memoryPool);
-	buildVertexArraysForChunks();
 }
 
 Entity Scene_Play::player()
@@ -73,7 +70,7 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0, 0, 0);
+	Grid3D gridPos(0, 0, 1);
 	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
@@ -81,6 +78,9 @@ void Scene_Play::spawnPlayer()
 
 void Scene_Play::buildVertexArraysForChunks()
 {
+	if (!m_chunkChanged) return;
+	m_chunkChanged = false;
+
 	for (Entity chunk : m_entityManager.getEntities("chunk"))
 	{
 		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
@@ -89,15 +89,34 @@ void Scene_Play::buildVertexArraysForChunks()
 	}
 }
 
+void Scene_Play::buildVertexArraysForChangedChunks()
+{
+	for (Entity chunk : m_entityManager.getEntities("chunk"))
+	{
+		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
+		if (!chunkTiles.changed) continue;
+		chunkTiles.changed = false;
+
+		auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
+		chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
+	}
+}
+
 void Scene_Play::spawnChunks()
 {
-	for (int i = -m_numChunks3D.x + 1; i <= 0; i++)
+	auto playerChunkPos = Utils::gridToChunkPos(player().get<CGridPosition>(m_memoryPool), m_chunkSize3D);
+	for (int dx = -m_loadRadius; dx <= m_loadRadius; ++dx)
 	{
-		for (int j = -m_numChunks3D.y + 1; j <= 0; j++)
+		for (int dy = -m_loadRadius; dy <= m_loadRadius; ++dy)
 		{
-			for (int k = -m_numChunks3D.z + 1; k <= 0; k++)
+			for (int dz = -m_loadRadius; dz < 0; ++dz)
 			{
-				spawnChunk(i, j, k);
+				Grid3D chunkPos = playerChunkPos + Grid3D(dx, dy, dz);
+				if (m_chunkMap.find(chunkPos) != m_chunkMap.end()) continue;
+
+				Entity chunk = spawnChunk(chunkPos);
+				m_chunkMap.insert({ chunkPos, chunk });
+				m_chunkChanged = true;
 			}
 		}
 	}
@@ -105,30 +124,51 @@ void Scene_Play::spawnChunks()
 
 void Scene_Play::despawnChunks()
 {
+	auto playerChunkPos = Utils::gridToChunkPos(player().get<CGridPosition>(m_memoryPool), m_chunkSize3D);
+	for (Entity chunk : m_entityManager.getEntities("chunk"))
+	{
+		auto chunkPos = Utils::gridToChunkPos(chunk.get<CGridPosition>(m_memoryPool), m_chunkSize3D);
+		int dx = std::abs(chunkPos.x - playerChunkPos.x);
+		int dy = std::abs(chunkPos.y - playerChunkPos.y);
+		int dz = chunkPos.z - playerChunkPos.z;
 
+		if (!(dx > m_loadRadius || dy > m_loadRadius || dz >= 0)) continue;
+
+		auto& tileChunk = chunk.get<CChunkTiles>(m_memoryPool);
+		for (Entity tile : tileChunk.tiles)
+		{
+			auto& tilePos = tile.get<CGridPosition>(m_memoryPool);
+			tile.destroy(m_memoryPool);
+			m_tileMap.erase(tilePos.pos);
+		}
+		chunk.destroy(m_memoryPool);
+		m_chunkMap.erase(chunkPos);
+		m_chunkChanged = true;
+	}
 }
 
-
-void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
+Entity Scene_Play::spawnChunk(const Grid3D& chunkPos)
 {
 	auto chunk = m_entityManager.addEntity(m_memoryPool, "chunk", "TileChunk");
 
-	Grid3D gridPos(chunkX * m_chunkSize3D.x,
-				   chunkY * m_chunkSize3D.y,
-		           chunkZ * m_chunkSize3D.z);
+	Grid3D gridPos(chunkPos.x * m_chunkSize3D.x,
+				   chunkPos.y * m_chunkSize3D.y,
+				   chunkPos.z * m_chunkSize3D.z);
 
 	chunk.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
-	auto& chunkPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
+	auto& chunkGridPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
 	auto& chunkTiles = chunk.add<CChunkTiles>(m_memoryPool);
 
-	spawnTilesFromChunk(chunkPos, chunkTiles);
+	spawnTilesFromChunk(chunkGridPos, chunkTiles);
+	chunkTiles.changed = true;
+	return chunk;
 }
 
-void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles& chunkTiles)
+void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTiles& chunkTiles)
 {
 	chunkTiles.tiles.reserve(m_chunkSize3D.volume());
 
-	Grid3D cPos = chunkPos.pos;
+	Grid3D cPos = chunkGridPos.pos;
 	for (int i = cPos.x; i < cPos.x + m_chunkSize3D.x; i++)
 	{
 		for (int j = cPos.y; j < cPos.y + m_chunkSize3D.y; j++)
@@ -141,7 +181,7 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles&
 	}
 }
 
-void Scene_Play::spawnTiles()
+/*void Scene_Play::spawnTiles()
 {
 	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(m_gridSize3D.x, m_gridSize3D.y);
 	const static int octaveCount = 6;
@@ -159,7 +199,7 @@ void Scene_Play::spawnTiles()
 			}
 		}
 	}
-}
+}*/
 
 Entity Scene_Play::spawnTile(float gridX, float gridY, float gridZ)
 {
@@ -188,7 +228,8 @@ void Scene_Play::update()
 	if (!m_paused)
 	{
 		m_entityManager.update(m_memoryPool);
-		// spawnChunks();
+		buildVertexArraysForChunks();
+		spawnChunks();
 		despawnChunks();
 		sMovement();
 		sCollision();
@@ -352,16 +393,11 @@ void Scene_Play::sRender()
 	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
 	for (Entity chunk : m_entityManager.getEntities("chunk"))
 	{
-		auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;		
-		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;
+		// auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
+		// if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;
 
 		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
 		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
-
-		sf::Text cPosText(m_game->assets().getFont("FutureMillennium"),
-			Utils::gridToChunkPos(cGridPos, m_chunkSize3D).toString());
-		cPosText.setPosition(chunk.get<CTransform>(m_memoryPool).pos);
-		window.draw(cPosText);
 	}
 
 	auto& animation = player().get<CAnimation>(m_memoryPool).animation;

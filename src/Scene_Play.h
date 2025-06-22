@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include <map>
 #include <memory>
+#include <set>
 
 #include "Grid3D.hpp"
 #include "EntityManager.hpp"
@@ -26,6 +27,8 @@ public:
 	Grid3D					 m_numChunks3D = { 4, 4, 4 };
 	TileMap					 m_tileMap;
 	ChunkMap				 m_chunkMap;
+	int						 m_loadRadius = 2;
+	bool					 m_chunkChanged = false;
 
 	void init(const std::string& levelPath);
 	void loadLevel(const std::string& filename);
@@ -35,7 +38,7 @@ public:
 	void onExitScene();
 	void update();
 	void spawnPlayer();
-	void spawnChunk(float chunkX, float chunkY, float chunkZ);
+	Entity spawnChunk(const Grid3D& chunkPos);
 	void spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles& chunkTiles);
 	void spawnTiles();
 	Entity spawnTile(float gridX, float gridY, float gridZ);
@@ -54,6 +57,7 @@ public:
 
 	void spawnChunks();
 	void despawnChunks();
+	void buildVertexArraysForChangedChunks();
 
 	Scene_Play() = default;
 	Scene_Play(GameEngine* gameEngine, const std::string& levelPath = "");
