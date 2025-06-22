@@ -107,9 +107,9 @@ void Scene_Play::spawnChunk(float chunkX, float chunkY, float chunkZ)
 {
 	auto chunk = m_entityManager.addEntity(m_memoryPool, "chunk", "TileChunk");
 
-	Grid3D gridPos(chunkX * m_chunkSize3D.x + m_chunkSize3D.x / 2,
-				   chunkY * m_chunkSize3D.y + m_chunkSize3D.y / 2,
-		           chunkZ * m_chunkSize3D.z + m_chunkSize3D.z / 2);
+	Grid3D gridPos(chunkX * m_chunkSize3D.x,
+				   chunkY * m_chunkSize3D.y,
+		           chunkZ * m_chunkSize3D.z);
 
 	chunk.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	auto& chunkPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
@@ -123,12 +123,11 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles&
 	chunkTiles.tiles.reserve(m_chunkSize3D.volume());
 
 	Grid3D cPos = chunkPos.pos;
-	Grid3D halfChunkSize = m_chunkSize3D / 2;
-	for (int i = cPos.x - halfChunkSize.x; i < cPos.x + halfChunkSize.x; i++)
+	for (int i = cPos.x; i < cPos.x + m_chunkSize3D.x; i++)
 	{
-		for (int j = cPos.y - halfChunkSize.y; j < cPos.y + halfChunkSize.y; j++)
+		for (int j = cPos.y; j < cPos.y + m_chunkSize3D.y; j++)
 		{
-			for (int k = cPos.z - halfChunkSize.z; k < cPos.z + halfChunkSize.z; k++)
+			for (int k = cPos.z; k < cPos.z + m_chunkSize3D.z; k++)
 			{
 				chunkTiles.tiles.emplace_back(spawnTile(i, j, k));
 			}
@@ -340,7 +339,7 @@ void Scene_Play::sRender()
 	sf::Color clearColor = sf::Color(204, 226, 225);
 	window.clear(clearColor);
 
-	static const float RENDER_DIST = 50.0f;
+	static const float RENDER_DIST = 100.0f;
 	static const float RENDER_DIST_SQUARED = RENDER_DIST * RENDER_DIST;
 
 	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
