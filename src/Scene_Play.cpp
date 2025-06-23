@@ -104,7 +104,7 @@ void Scene_Play::buildVertexArraysForChunks()
 	if (!m_chunkChanged) return;
 	m_chunkChanged = false;
 
-	for (auto& [gridPos, chunk] : m_chunkMap)
+	for (Entity chunk : m_entityManager.getEntities("chunk"))
 	{
 		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
 		if (!chunkTiles.changed) continue;
@@ -124,7 +124,7 @@ void Scene_Play::spawnChunks()
 			for (int dz = -m_loadRadius; dz <= m_loadRadius; ++dz)
 			{
 				Grid3D chunkPos = playerChunkPos + Grid3D(dx, dy, dz);
-				if (m_chunkMap.find(chunkPos) != m_chunkMap.end()) continue;
+				if (m_chunkMap.contains(chunkPos)) continue;
 
 				Entity chunk = spawnChunk(chunkPos);
 				m_chunkMap.insert({ chunkPos, chunk });
@@ -178,33 +178,33 @@ Entity Scene_Play::spawnChunk(const Grid3D& chunkPos)
 void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& chunkTiles)
 {
 	Grid3D& cPos = chunkGridPos.pos;
-	for (int x = cPos.x; x < cPos.x + m_chunkSize3D.x; ++x)
+	int startX = cPos.x, endX = cPos.x + m_chunkSize3D.x;
+	int startY = cPos.y, endY = cPos.y + m_chunkSize3D.y;
+	int startZ = cPos.z, endZ = cPos.z + m_chunkSize3D.z;
+
+	for (int x = startX; x < endX; ++x)
 	{
-		for (int y = cPos.y; y < cPos.y + m_chunkSize3D.y; ++y)
+		if (x < 0 || x >= m_gridSize3D.x) continue;
+		for (int y = startY; y < endY; ++y)
 		{
-			// make sure x,y in [0..w),[0..h)
-			if (x < 0 || x >= m_gridSize3D.x || y < 0 || y >= m_gridSize3D.y) continue;
+			if (y < 0 || y >= m_gridSize3D.y) continue;
 
 			int columnHeight = m_heightMap[y * m_gridSize3D.x + x];
+			if (columnHeight < startZ || columnHeight >= endZ) continue;
 
-			for (int z = cPos.z; z < cPos.z + m_chunkSize3D.z; ++z)
-			{
-				if (z < columnHeight)
-					z = columnHeight;
+			Grid3D gridPos(x, y, columnHeight);
 
-				Grid3D gridPos(x, y, z);
-				if (m_tileSet.find(gridPos) != m_tileSet.end()) continue;
-				// tile exists but not as an entity
-				m_tileSet.insert(gridPos);
+			// Skip if already exists
+			if (!m_tileSet.insert(gridPos).second) continue;
 
-				bool surrounded = (m_tileSet.find(gridPos - Grid3D(1, 0, 0)) != m_tileSet.end() &&
-								   m_tileSet.find(gridPos - Grid3D(0, 1, 0)) != m_tileSet.end()) &&
-								   m_tileSet.find(gridPos - Grid3D(0, 0, 1)) != m_tileSet.end();
-				if (surrounded) continue;
+			// Check if surrounded
+			bool surrounded =
+				m_tileSet.contains(gridPos - Grid3D(1, 0, 0)) &&
+				m_tileSet.contains(gridPos - Grid3D(0, 1, 0)) &&
+				m_tileSet.contains(gridPos - Grid3D(0, 0, 1));
+			if (surrounded) continue;
 
-				Entity tile = spawnTile(gridPos);
-				chunkTiles.tiles.emplace_back(tile);
-			}
+			chunkTiles.tiles.emplace_back(spawnTile(gridPos));
 		}
 	}
 }
@@ -400,11 +400,12 @@ void Scene_Play::sRender()
 	static const float RENDER_DIST_SQUARED = RENDER_DIST * RENDER_DIST;
 
 	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
-	for (auto& [gridPos, chunk] : m_chunkMap)
+	for (auto it = m_chunkMap.rbegin(); it != m_chunkMap.rend(); ++it)
 	{
 		/*auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
 		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;*/
-
+		
+		auto& chunk = it->second;
 		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
 		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
 	}
