@@ -190,21 +190,24 @@ void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& c
 			if (y < 0 || y >= m_gridSize3D.y) continue;
 
 			int columnHeight = m_heightMap[y * m_gridSize3D.x + x];
-			if (columnHeight < startZ || columnHeight >= endZ) continue;
+			for (int z = startZ; z < endZ; ++z)
+			{
+				if (z < columnHeight)
+					z = columnHeight;
+				Grid3D gridPos(x, y, z);
 
-			Grid3D gridPos(x, y, columnHeight);
+				// Skip if already exists
+				if (!m_tileSet.insert(gridPos).second) continue;
 
-			// Skip if already exists
-			if (!m_tileSet.insert(gridPos).second) continue;
+				// Check if surrounded
+				bool surrounded =
+					m_tileSet.contains(gridPos - Grid3D(1, 0, 0)) &&
+					m_tileSet.contains(gridPos - Grid3D(0, 1, 0)) &&
+					m_tileSet.contains(gridPos - Grid3D(0, 0, 1));
+				if (surrounded) continue;
 
-			// Check if surrounded
-			bool surrounded =
-				m_tileSet.contains(gridPos - Grid3D(1, 0, 0)) &&
-				m_tileSet.contains(gridPos - Grid3D(0, 1, 0)) &&
-				m_tileSet.contains(gridPos - Grid3D(0, 0, 1));
-			if (surrounded) continue;
-
-			chunkTiles.tiles.emplace_back(spawnTile(gridPos));
+				chunkTiles.tiles.emplace_back(spawnTile(gridPos));
+			}
 		}
 	}
 }
@@ -212,13 +215,16 @@ void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& c
 Entity Scene_Play::spawnTile(Grid3D& chunkPos)
 {
 	const static int m_grassLevel = 24;
+	const static int m_snowLevel = 40;
 	int waterLevel = -m_waterLevel;
 	int grassLevel = -m_grassLevel;
+	int snowLevel = -m_snowLevel;
 
 	sf::Vector2i tileTexPos;
-	if (chunkPos.z >= waterLevel) tileTexPos = sf::Vector2i(0, 10);
-	else if (waterLevel > chunkPos.z && chunkPos.z >= grassLevel) tileTexPos = sf::Vector2i(9, 0);
-	else if (grassLevel > chunkPos.z) tileTexPos = sf::Vector2i(0, 2);
+	if (chunkPos.z >= waterLevel) tileTexPos = sf::Vector2i(1, 2);
+	else if (waterLevel > chunkPos.z && chunkPos.z >= grassLevel) tileTexPos = sf::Vector2i(0, 6);
+	else if (grassLevel > chunkPos.z && chunkPos.z >= snowLevel) tileTexPos = sf::Vector2i(0, 0);
+	else if (snowLevel > chunkPos.z) tileTexPos = sf::Vector2i(0, 3);
 
 	tileTexPos.x *= m_gridCellSize.x;
 	tileTexPos.y *= m_gridCellSize.y;

@@ -1,2 +1,3 @@
 Collisions
 Delay entity creation until its visible
+Destructable entities
