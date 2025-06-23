@@ -42,6 +42,9 @@ public:
 		}
 		m_entitiesToAdd.clear();
 
+		if (!pool.m_entityDestroyed) return;
+		pool.m_entityDestroyed = false;
+
 		removeDeadEntities(pool, m_entities);
 		for (auto& [tag, entityVec] : m_entityMap)
 		{

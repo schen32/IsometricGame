@@ -30,6 +30,7 @@ public:
 	std::vector<std::string>	m_names;
 	std::vector<bool>			m_active;
 	std::vector<size_t>			m_freeIndices;
+	bool						m_entityDestroyed = false;
 
 	MemoryPool() = default;
 	MemoryPool(size_t maxEntities) : m_numEntities(0), m_maxEntities(maxEntities)
@@ -42,7 +43,7 @@ public:
 		m_names.resize(maxEntities);
 		m_active.resize(maxEntities);
 		m_freeIndices.reserve(maxEntities);
-		for (size_t i = 0; i < m_maxEntities; i++)
+		for (int i = 0; i < m_maxEntities; i++)
 		{
 			m_freeIndices.emplace_back(i);
 		}
@@ -99,5 +100,6 @@ public:
 		m_active[entityId] = false;
 		m_freeIndices.emplace_back(entityId);
 		m_numEntities--;
+		m_entityDestroyed = true;
 	}
 };

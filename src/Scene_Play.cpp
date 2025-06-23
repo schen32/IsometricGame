@@ -49,10 +49,10 @@ void Scene_Play::init(const std::string& levelPath)
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
-	const static size_t MAX_CHUNKS = m_numChunks3D.volume() * m_chunkSize3D.volume() * m_loadRadius;
+	const static size_t MAX_ENTITIES = m_chunkSize3D.volume() * 100;
 
 	m_entityManager = EntityManager();
-	m_memoryPool = MemoryPool(MAX_CHUNKS);
+	m_memoryPool = MemoryPool(MAX_ENTITIES);
 	spawnPlayer();
 	m_entityManager.update(m_memoryPool);
 }
@@ -74,7 +74,7 @@ void Scene_Play::generateHeightMap()
 		for (int i = 0; i < w; ++i)        // column (x) inner
 		{
 			float v = row[i] * maxZ;
-			m_heightMap.emplace_back(int(v + 0.5f));  // round
+			m_heightMap.emplace_back(std::max(int(v + 0.5f), m_waterLevel));  // round
 		}
 	}
 }
@@ -109,8 +109,8 @@ void Scene_Play::buildVertexArraysForChunks()
 		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
 		if (!chunkTiles.changed) continue;
 
-		auto chunkVertexArray = buildVertexArrayForChunk(chunkTiles, m_game->assets().getTexture("TexTiles"));
-		chunk.add<CVertexArray>(m_memoryPool, chunkVertexArray);
+		auto& cVa = chunk.add<CVertexArray>(m_memoryPool);
+		buildVertexArrayForChunk(cVa, chunkTiles, m_game->assets().getTexture("TexTiles"));
 	}
 }
 
@@ -194,8 +194,6 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTi
 			{
 				if (z > columnHeight)
 					break;   // no taller tiles
-				if (z < m_waterLevel)
-					z = m_waterLevel;
 				Grid3D gridPos(x, y, z);
 				chunkTiles.tiles.emplace_back(spawnTile(gridPos));
 			}
@@ -420,10 +418,11 @@ void Scene_Play::sRender()
 	window.setView(m_cameraView);
 }
 
-sf::VertexArray Scene_Play::buildVertexArrayForChunk(CChunkTiles& tileChunk, const sf::Texture& tileset)
+void Scene_Play::buildVertexArrayForChunk(CVertexArray& cVa, CChunkTiles& tileChunk, const sf::Texture& tileset)
 {
 	auto& tiles = tileChunk.tiles;
-	sf::VertexArray va(sf::PrimitiveType::Triangles); // No pre-sizing for dynamic appending
+	sf::VertexArray& va = cVa.va;
+	va.setPrimitiveType(sf::PrimitiveType::Triangles);
 
 	for (size_t i = 0; i < tiles.size(); ++i)
 	{
@@ -461,6 +460,4 @@ sf::VertexArray Scene_Play::buildVertexArrayForChunk(CChunkTiles& tileChunk, con
 		va.append(sf::Vertex({ bottomLeft, sf::Color::White, texBottomLeft }));
 		va.append(sf::Vertex({ topLeft, sf::Color::White, texTopLeft }));
 	}
-
-	return va;
 }
