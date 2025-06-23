@@ -40,7 +40,7 @@ public:
 	static bool isBehindAnotherTile(const CGridPosition& cGridPos, const TileMap& tileMap)
 	{
 		auto& gridPos = cGridPos.pos;
-		if (tileMap.find(gridPos + Grid3D(1, 1, 1)) == tileMap.end())
+		if (tileMap.find(gridPos - Grid3D(1, 1, 1)) == tileMap.end())
 			return false;
 		return true;
 	}
@@ -106,18 +106,18 @@ public:
 	{
 		Vec2f eSize = eAnimation.animation.m_size;
 
-		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2);
-		Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2);
+		Vec2f i = Vec2f(eSize.x / 2, 0.5f * eSize.y / 2) * -1;
+		Vec2f j = Vec2f(-eSize.x / 2, 0.5f * eSize.y / 2) * -1;
 
-		return (i * gridPos.x + j * gridPos.y) - Vec2f(0, gridPos.z * eSize.y / 2);
+		return (i * gridPos.x + j * gridPos.y) + Vec2f(0, gridPos.z * eSize.y / 2);
 	}
 
 	Vec2f static gridToIsometric(Grid3D& gridPos, const Vec2f& size)
 	{
-		Vec2f i = Vec2f(size.x / 2, 0.5f * size.y / 2);
-		Vec2f j = Vec2f(-size.x / 2, 0.5f * size.y / 2);
+		Vec2f i = Vec2f(size.x / 2, 0.5f * size.y / 2) * -1;
+		Vec2f j = Vec2f(-size.x / 2, 0.5f * size.y / 2) * -1;
 
-		return (i * gridPos.x + j * gridPos.y) - Vec2f(0, gridPos.z * size.y / 2);
+		return (i * gridPos.x + j * gridPos.y) + Vec2f(0, gridPos.z * size.y / 2);
 	}
 
 	Vec2f static isometricToGrid(float isoX, float isoY, int z, Vec2f gridCellSize)

@@ -74,7 +74,7 @@ void Scene_Play::generateHeightMap()
 		for (int i = 0; i < w; ++i)        // column (x) inner
 		{
 			float v = row[i] * maxZ;
-			m_heightMap.emplace_back(std::max(int(v + 0.5f), m_waterLevel));  // round
+			m_heightMap.emplace_back(-std::max(int(v + 0.5f), m_waterLevel));  // round
 		}
 	}
 }
@@ -93,7 +93,7 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0, 0, m_chunkSize3D.z);
+	Grid3D gridPos(0, 0, -m_chunkSize3D.z);
 	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
@@ -104,7 +104,7 @@ void Scene_Play::buildVertexArraysForChunks()
 	if (!m_chunkChanged) return;
 	m_chunkChanged = false;
 
-	for (Entity chunk : m_entityManager.getEntities("chunk"))
+	for (auto& [gridPos, chunk] : m_chunkMap)
 	{
 		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
 		if (!chunkTiles.changed) continue;
@@ -151,7 +151,7 @@ void Scene_Play::despawnChunks()
 		{
 			auto& tilePos = tile.get<CGridPosition>(m_memoryPool);
 			tile.destroy(m_memoryPool);
-			m_tileMap.erase(tilePos.pos);
+			m_tileSet.erase(tilePos.pos);
 		}
 		chunk.destroy(m_memoryPool);
 		m_chunkMap.erase(chunkPos);
@@ -175,27 +175,35 @@ Entity Scene_Play::spawnChunk(const Grid3D& chunkPos)
 	return chunk;
 }
 
-void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTiles& chunkTiles)
+void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& chunkTiles)
 {
-	int w = m_gridSize3D.x, h = m_gridSize3D.y;
-	Grid3D cPos = chunkGridPos.pos;
-
+	Grid3D& cPos = chunkGridPos.pos;
 	for (int x = cPos.x; x < cPos.x + m_chunkSize3D.x; ++x)
 	{
 		for (int y = cPos.y; y < cPos.y + m_chunkSize3D.y; ++y)
 		{
-			size_t mapX = x, mapY = y;
 			// make sure x,y in [0..w),[0..h)
-			if (mapX < 0 || mapX >= w || mapY < 0 || mapY >= h) continue;
+			if (x < 0 || x >= m_gridSize3D.x || y < 0 || y >= m_gridSize3D.y) continue;
 
-			int columnHeight = m_heightMap[mapY * w + mapX];
+			int columnHeight = m_heightMap[y * m_gridSize3D.x + x];
 
 			for (int z = cPos.z; z < cPos.z + m_chunkSize3D.z; ++z)
 			{
-				if (z > columnHeight)
-					break;   // no taller tiles
+				if (z < columnHeight)
+					z = columnHeight;
+
 				Grid3D gridPos(x, y, z);
-				chunkTiles.tiles.emplace_back(spawnTile(gridPos));
+				if (m_tileSet.find(gridPos) != m_tileSet.end()) continue;
+				// tile exists but not as an entity
+				m_tileSet.insert(gridPos);
+
+				bool surrounded = (m_tileSet.find(gridPos - Grid3D(1, 0, 0)) != m_tileSet.end() &&
+								   m_tileSet.find(gridPos - Grid3D(0, 1, 0)) != m_tileSet.end()) &&
+								   m_tileSet.find(gridPos - Grid3D(0, 0, 1)) != m_tileSet.end();
+				if (surrounded) continue;
+
+				Entity tile = spawnTile(gridPos);
+				chunkTiles.tiles.emplace_back(tile);
 			}
 		}
 	}
@@ -203,14 +211,14 @@ void Scene_Play::spawnTilesFromChunk(const CGridPosition& chunkGridPos, CChunkTi
 
 Entity Scene_Play::spawnTile(Grid3D& chunkPos)
 {
-	const static int grassLevel = 24;
-	const static int snowLevel = 36;
+	const static int m_grassLevel = 24;
+	int waterLevel = -m_waterLevel;
+	int grassLevel = -m_grassLevel;
 
 	sf::Vector2i tileTexPos;
-	if (chunkPos.z <= m_waterLevel) tileTexPos = sf::Vector2i(0, 10);
-	else if (m_waterLevel < chunkPos.z && chunkPos.z <= grassLevel) tileTexPos = sf::Vector2i(9, 0);
-	else if (grassLevel < chunkPos.z && chunkPos.z <= snowLevel) tileTexPos = sf::Vector2i(0, 2);
-	else if (snowLevel < chunkPos.z) tileTexPos = sf::Vector2i(0, 2);
+	if (chunkPos.z >= waterLevel) tileTexPos = sf::Vector2i(0, 10);
+	else if (waterLevel > chunkPos.z && chunkPos.z >= grassLevel) tileTexPos = sf::Vector2i(9, 0);
+	else if (grassLevel > chunkPos.z) tileTexPos = sf::Vector2i(0, 2);
 
 	tileTexPos.x *= m_gridCellSize.x;
 	tileTexPos.y *= m_gridCellSize.y;
@@ -221,7 +229,6 @@ Entity Scene_Play::spawnTile(Grid3D& chunkPos)
 		sf::IntRect(tileTexPos, sf::Vector2i(m_gridCellSize)));
 	tile.add<CGridPosition>(m_memoryPool, chunkPos);
 
-	m_tileMap.insert({ chunkPos, tile });
 	return tile;
 }
 
@@ -256,12 +263,12 @@ void Scene_Play::sMovement()
 
 	Grid3D delta = { 0, 0, 0 };
 
-	if (input.forward) { delta.x -= moveStep; delta.y -= moveStep; } // NW
-	if (input.backward) { delta.x += moveStep; delta.y += moveStep; } // SE
-	if (input.left) { delta.x -= moveStep; delta.y += moveStep; } // SW
-	if (input.right) { delta.x += moveStep; delta.y -= moveStep; } // NE
-	if (input.up) { delta.z += moveStep; } // UP
-	if (input.down) { delta.z -= moveStep; } // DOWN
+	if (input.backward) { delta.x -= moveStep; delta.y -= moveStep; } // NW
+	if (input.forward) { delta.x += moveStep; delta.y += moveStep; } // SE
+	if (input.right) { delta.x -= moveStep; delta.y += moveStep; } // SW
+	if (input.left) { delta.x += moveStep; delta.y -= moveStep; } // NE
+	if (input.down) { delta.z += moveStep; } // UP
+	if (input.up) { delta.z -= moveStep; } // DOWN
 
 	if (!(delta == Grid3D{ 0, 0, 0 })) {
 		grid.pos += delta;
@@ -395,8 +402,8 @@ void Scene_Play::sRender()
 	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
 	for (auto& [gridPos, chunk] : m_chunkMap)
 	{
-		auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
-		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;
+		/*auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
+		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;*/
 
 		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
 		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
@@ -424,14 +431,14 @@ void Scene_Play::buildVertexArrayForChunk(CVertexArray& cVa, CChunkTiles& tileCh
 	sf::VertexArray& va = cVa.va;
 	va.setPrimitiveType(sf::PrimitiveType::Triangles);
 
-	for (size_t i = 0; i < tiles.size(); ++i)
+	for (int i = tiles.size() - 1; i >= 0; --i)
 	{
 		Entity& tile = tiles[i];
 		auto& tileGridPos = tile.get<CGridPosition>(m_memoryPool).pos;
 
 		// Optionally skip tiles that are fully enclosed
-		if (m_tileMap.find(tileGridPos + Grid3D(1, 1, 1)) != m_tileMap.end())
-			continue;
+		/*if (m_tileMap.find(tileGridPos + Grid3D(1, 1, 1)) != m_tileMap.end())
+			continue;*/
 
 		auto& tileInfo = tile.get<CTileRenderInfo>(m_memoryPool);
 		const sf::Vector2f& pos = tileInfo.position;

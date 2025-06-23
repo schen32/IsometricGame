@@ -31,7 +31,7 @@ public:
 	}
 
 	bool operator<(const Grid3D& other) const {
-		return std::tie(z, y, x) < std::tie(other.z, other.y, other.x);
+		return std::tie(x, y, z) < std::tie(other.x, other.y, other.z);
 	}
 
 	bool operator==(const Grid3D& other) const {
@@ -40,6 +40,10 @@ public:
 
 	Grid3D operator+(const Grid3D& other) const {
 		return Grid3D(x + other.x, y + other.y, z + other.z);
+	}
+
+	Grid3D operator-(const Grid3D& other) const {
+		return Grid3D(x - other.x, y - other.y, z - other.z);
 	}
 
 	Grid3D operator/(float other) const {
@@ -55,10 +59,4 @@ public:
 	float volume() const {
 		return x * y * z;
 	}
-
-	struct Grid3DHash {
-		size_t operator()(const Grid3D& g) const {
-			return std::hash<float>()(g.x) ^ (std::hash<float>()(g.y) << 1) ^ (std::hash<float>()(g.z) << 2);
-		}
-	};
 };

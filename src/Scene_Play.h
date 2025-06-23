@@ -10,6 +10,7 @@
 #include "ParticleSystem.hpp"
 
 using TileMap = std::map<Grid3D, Entity>;
+using TileSet = std::set<Grid3D>;
 using ChunkMap = std::map<Grid3D, Entity>;
 using HeightMap = std::vector<float>;
 
@@ -27,6 +28,7 @@ public:
 	Grid3D					 m_chunkSize3D = { 32, 32, 32 };
 	Grid3D					 m_numChunks3D = { 4, 4, 4 };
 	TileMap					 m_tileMap;
+	TileSet					 m_tileSet;
 	ChunkMap				 m_chunkMap;
 	int						 m_loadRadius = 3;
 	bool					 m_chunkChanged = false;
@@ -43,7 +45,7 @@ public:
 	void update();
 	void spawnPlayer();
 	Entity spawnChunk(const Grid3D& chunkPos);
-	void spawnTilesFromChunk(const CGridPosition& chunkPos, CChunkTiles& chunkTiles);
+	void spawnTilesFromChunk(CGridPosition& chunkPos, CChunkTiles& chunkTiles);
 	void spawnTiles();
 	Entity spawnTile(Grid3D& chunkPos);
 
