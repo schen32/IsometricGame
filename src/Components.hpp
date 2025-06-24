@@ -3,7 +3,6 @@
 #include "Animation.hpp"
 #include "Assets.hpp"
 #include "Vec2.hpp"
-#include "Grid3D.hpp"
 
 class Entity;
 
@@ -25,45 +24,6 @@ public:
 		: pos(p), velocity(v), angle(a) {}
 };
 
-class CGridPosition
-{
-public:
-	Grid3D pos = Grid3D(0, 0, 0);
-
-	CGridPosition() = default;
-	CGridPosition(const Grid3D& p): pos(p) {}
-};
-
-class CChunkTiles
-{
-public:
-	std::vector<Entity> tiles;
-	bool changed = false;
-
-	CChunkTiles() = default;
-	CChunkTiles(const std::vector<Entity>& t) : tiles(t) {}
-};
-
-class CTileRenderInfo
-{
-public:
-	sf::Vector2f position;
-	sf::IntRect textureRect;
-
-	CTileRenderInfo() = default;
-	CTileRenderInfo(const sf::Vector2f& p, const sf::IntRect& r)
-		: position(p), textureRect(r) { }
-};
-
-class CVertexArray
-{
-public:
-	sf::VertexArray va;
-
-	CVertexArray() = default;
-	CVertexArray(const sf::VertexArray& iva) : va(iva) {}
-};
-
 class CInput
 {
 public:
@@ -71,8 +31,6 @@ public:
 	bool left = false;
 	bool right = false;
 	bool down = false;
-	bool forward = false;
-	bool backward = false;
 
 	CInput() = default;
 };

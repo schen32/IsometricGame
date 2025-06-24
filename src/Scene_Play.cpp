@@ -7,7 +7,6 @@
 #include "Action.hpp"
 #include "ParticleSystem.hpp"
 #include "Utils.hpp"
-#include "PerlinNoise.hpp"
 #include "Entity.hpp"
 
 #include <fstream>
@@ -31,52 +30,27 @@ void Scene_Play::init(const std::string& levelPath)
 
 	registerKeyAction(sf::Keyboard::Scan::Escape, "ESCAPE");
 
-	registerKeyAction(sf::Keyboard::Scan::Space, "UP");
-	registerKeyAction(sf::Keyboard::Scan::LShift, "DOWN");
-
 	registerKeyAction(sf::Keyboard::Scan::A, "LEFT");
 	registerKeyAction(sf::Keyboard::Scan::D, "RIGHT");
-	registerKeyAction(sf::Keyboard::Scan::W, "FORWARD");
-	registerKeyAction(sf::Keyboard::Scan::S, "BACKWARD");
+	registerKeyAction(sf::Keyboard::Scan::W, "UP");
+	registerKeyAction(sf::Keyboard::Scan::S, "DOWN");
 
 	m_cameraView.setSize(sf::Vector2f(width(), height()));
 	m_cameraView.zoom(1.0f);
 	m_game->window().setView(m_cameraView);
 
 	loadLevel(levelPath);
-	generateHeightMap();
 }
 
 void Scene_Play::loadLevel(const std::string& filename)
 {
-	const static size_t MAX_ENTITIES = m_chunkSize3D.volume() * 100;
+	const static size_t MAX_ENTITIES = 1000;
 
 	m_entityManager = EntityManager();
 	m_memoryPool = MemoryPool(MAX_ENTITIES);
 	spawnPlayer();
+	spawnLevelEntities();
 	m_entityManager.update(m_memoryPool);
-}
-
-void Scene_Play::generateHeightMap()
-{
-	int w = m_gridSize3D.x, h = m_gridSize3D.y, maxZ = int(m_gridSize3D.z);
-
-	// flat storage
-	m_heightMap.clear();
-	m_heightMap.reserve(w * h);
-
-	Noise2DArray whiteNoise = PerlinNoise::GenerateWhiteNoise(w, h);
-	Noise2DArray perlinNoise = PerlinNoise::GeneratePerlinNoise(whiteNoise, 6);
-
-	for (int j = 0; j < h; ++j)            // note: row (y) outer for cache
-	{
-		auto& row = perlinNoise[j];
-		for (int i = 0; i < w; ++i)        // column (x) inner
-		{
-			float v = row[i] * maxZ;
-			m_heightMap.emplace_back(-std::max(int(v + 0.5f), m_waterLevel));  // round
-		}
-	}
 }
 
 Entity Scene_Play::player()
@@ -92,161 +66,22 @@ void Scene_Play::spawnPlayer()
 	m_playerDied = false;
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
-
-	Grid3D gridPos(m_chunkSize3D.x, m_chunkSize3D.y, -m_chunkSize3D.z);
-	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
-	p.add<CGridPosition>(m_memoryPool, gridPos);
+	p.add<CTransform>(m_memoryPool, Vec2f(0, 0));
 	p.add<CInput>(m_memoryPool);
 }
 
-void Scene_Play::buildVertexArraysForChunks()
+void Scene_Play::spawnLevelEntities()
 {
-	if (!m_chunkChanged) return;
-	m_chunkChanged = false;
-
-	for (Entity chunk : m_entityManager.getEntities("chunk"))
-	{
-		auto& chunkTiles = chunk.get<CChunkTiles>(m_memoryPool);
-		if (!chunkTiles.changed) continue;
-
-		auto& cVa = chunk.add<CVertexArray>(m_memoryPool);
-		buildVertexArrayForChunk(cVa, chunkTiles, m_game->assets().getTexture("TexTiles"));
-	}
-}
-
-void Scene_Play::spawnChunks()
-{
-	auto playerChunkPos = Utils::gridToChunkPos(player().get<CGridPosition>(m_memoryPool), m_chunkSize3D);
-	for (int dx = -m_loadRadius; dx <= m_loadRadius; ++dx)
-	{
-		for (int dy = -m_loadRadius; dy <= m_loadRadius; ++dy)
-		{
-			for (int dz = -m_loadRadius; dz <= m_loadRadius; ++dz)
-			{
-				Grid3D chunkPos = playerChunkPos + Grid3D(dx, dy, dz);
-				if (m_chunkMap.contains(chunkPos)) continue;
-
-				Entity chunk = spawnChunk(chunkPos);
-				m_chunkMap.insert({ chunkPos, chunk });
-				m_chunkChanged = true;
-			}
-		}
-	}
-}
-
-void Scene_Play::despawnChunks()
-{
-	auto playerChunkPos = Utils::gridToChunkPos(player().get<CGridPosition>(m_memoryPool), m_chunkSize3D);
-	for (Entity chunk : m_entityManager.getEntities("chunk"))
-	{
-		auto chunkPos = Utils::gridToChunkPos(chunk.get<CGridPosition>(m_memoryPool), m_chunkSize3D);
-		int dx = std::abs(chunkPos.x - playerChunkPos.x);
-		int dy = std::abs(chunkPos.y - playerChunkPos.y);
-		int dz = std::abs(chunkPos.z - playerChunkPos.z);
-
-		if (!(dx > m_loadRadius || dy > m_loadRadius || dz > m_loadRadius)) continue;
-
-		auto& tileChunk = chunk.get<CChunkTiles>(m_memoryPool);
-		for (Entity tile : tileChunk.tiles)
-		{
-			auto& tilePos = tile.get<CGridPosition>(m_memoryPool);
-			tile.destroy(m_memoryPool);
-			m_tileSet.erase(tilePos.pos);
-		}
-		chunk.destroy(m_memoryPool);
-		m_chunkMap.erase(chunkPos);
-	}
-}
-
-Entity Scene_Play::spawnChunk(const Grid3D& chunkPos)
-{
-	auto chunk = m_entityManager.addEntity(m_memoryPool, "chunk", "TileChunk");
-
-	Grid3D gridPos(chunkPos.x * m_chunkSize3D.x,
-				   chunkPos.y * m_chunkSize3D.y,
-				   chunkPos.z * m_chunkSize3D.z);
-
-	chunk.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
-	auto& chunkGridPos = chunk.add<CGridPosition>(m_memoryPool, gridPos);
-	auto& chunkTiles = chunk.add<CChunkTiles>(m_memoryPool);
-
-	spawnTilesFromChunk(chunkGridPos, chunkTiles);
-	chunkTiles.changed = true;
-	return chunk;
-}
-
-void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& chunkTiles)
-{
-	Grid3D& cPos = chunkGridPos.pos;
-	int startX = cPos.x, endX = cPos.x + m_chunkSize3D.x;
-	int startY = cPos.y, endY = cPos.y + m_chunkSize3D.y;
-
-	for (int x = startX; x < endX; ++x)
-	{
-		if (x < 0 || x >= m_gridSize3D.x) continue;
-		for (int y = startY; y < endY; ++y)
-		{
-			if (y < 0 || y >= m_gridSize3D.y) continue;
-
-			int flatIndex = y * m_gridSize3D.x + x;
-			int columnHeight = m_heightMap[flatIndex];
-			int startZ = std::max(static_cast<int>(cPos.z), columnHeight);
-			int endZ = cPos.z + m_chunkSize3D.z;
-
-			for (int z = startZ; z < endZ; ++z)
-			{
-				Grid3D gridPos(x, y, z);
-
-				auto [it, inserted] = m_tileSet.insert(gridPos);
-				if (!inserted) continue;
-
-				bool surrounded =
-					m_tileSet.contains(gridPos - Grid3D(1, 0, 0)) &&
-					m_tileSet.contains(gridPos - Grid3D(0, 1, 0)) &&
-					m_tileSet.contains(gridPos - Grid3D(0, 0, 1));
-				if (surrounded) continue;
-
-				chunkTiles.tiles.emplace_back(spawnTile(gridPos));
-			}
-		}
-	}
-}
-
-
-Entity Scene_Play::spawnTile(Grid3D& chunkPos)
-{
-	const static int m_grassLevel = 22;
-	const static int m_snowLevel = 36;
-	int waterLevel = -m_waterLevel;
-	int grassLevel = -m_grassLevel;
-	int snowLevel = -m_snowLevel;
-
-	sf::Vector2i tileTexPos;
-	if (chunkPos.z >= waterLevel) tileTexPos = sf::Vector2i(1, 2);
-	else if (waterLevel > chunkPos.z && chunkPos.z >= grassLevel) tileTexPos = sf::Vector2i(0, 6);
-	else if (grassLevel > chunkPos.z && chunkPos.z >= snowLevel) tileTexPos = sf::Vector2i(0, 0);
-	else if (snowLevel > chunkPos.z) tileTexPos = sf::Vector2i(0, 3);
-
-	tileTexPos.x *= m_gridCellSize.x;
-	tileTexPos.y *= m_gridCellSize.y;
-
-	auto tile = m_entityManager.addEntity(m_memoryPool, "tile", "Tile");
-	
-	tile.add<CTileRenderInfo>(m_memoryPool, Utils::gridToIsometric(chunkPos, m_gridCellSize),
-		sf::IntRect(tileTexPos, sf::Vector2i(m_gridCellSize)));
-	tile.add<CGridPosition>(m_memoryPool, chunkPos);
-
-	return tile;
+	auto enemy = m_entityManager.addEntity(m_memoryPool, "enemy", "enemyCharacter");
+	enemy.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
+	enemy.add<CTransform>(m_memoryPool, Vec2f(200, 200));
 }
 
 void Scene_Play::update()
 {
 	if (!m_paused)
 	{
-		spawnChunks();
-		despawnChunks();
 		m_entityManager.update(m_memoryPool);
-		buildVertexArraysForChunks();
 		sMovement();
 		sCollision();
 		sCamera();
@@ -261,37 +96,24 @@ void Scene_Play::update()
 
 void Scene_Play::sMovement()
 {
-	static const float moveStep = 0.5f;
+	static const float moveStep = 5.0f;
 
 	auto p = player();
 	auto& input = p.get<CInput>(m_memoryPool);
 	auto& transform = p.get<CTransform>(m_memoryPool);
-	auto& grid = p.get<CGridPosition>(m_memoryPool);
 
-	Grid3D delta = { 0, 0, 0 };
+	transform.velocity = { 0, 0 };
 
-	if (input.backward) { delta.x -= moveStep; delta.y -= moveStep; } // NW
-	if (input.forward) { delta.x += moveStep; delta.y += moveStep; } // SE
-	if (input.right) { delta.x -= moveStep; delta.y += moveStep; } // SW
-	if (input.left) { delta.x += moveStep; delta.y -= moveStep; } // NE
-	if (input.down) { delta.z += moveStep; } // UP
-	if (input.up) { delta.z -= moveStep; } // DOWN
+	if (input.right) { transform.velocity.x += moveStep; } // SW
+	if (input.left) { transform.velocity.x -= moveStep; } // NE
+	if (input.down) { transform.velocity.y += moveStep; } // UP
+	if (input.up) { transform.velocity.y -= moveStep; } // DOWN
 
-	if (!(delta == Grid3D{ 0, 0, 0 })) {
-		grid.pos += delta;
+	if (!(transform.velocity == Vec2f(0, 0)))
+	{
 		transform.prevPos = transform.pos;
-		transform.pos = Utils::gridToIsometric(grid.pos, m_gridCellSize);
+		transform.pos += transform.velocity;
 	}
-}
-
-void Scene_Play::sAI()
-{
-
-}
-
-void Scene_Play::sStatus()
-{
-
 }
 
 void Scene_Play::sCollision()
@@ -299,9 +121,51 @@ void Scene_Play::sCollision()
 	
 }
 
-void Scene_Play::sSelect()
+void Scene_Play::sAnimation()
 {
-	
+	for (Entity entity : m_entityManager.getEntities())
+	{
+		auto& transform = entity.get<CTransform>(m_memoryPool);
+		auto& animation = entity.get<CAnimation>(m_memoryPool).animation;
+		animation.m_sprite.setPosition(transform.pos);
+		animation.update();
+	}
+}
+
+void Scene_Play::sCamera()
+{
+	auto& pTransform = player().get<CTransform>(m_memoryPool);
+	m_cameraView.setCenter(pTransform.pos);
+	m_game->window().setView(m_cameraView);
+}
+
+void Scene_Play::sRender()
+{
+	auto& window = m_game->window();
+	sf::Color clearColor = sf::Color(204, 226, 225);
+	window.clear(clearColor);
+
+	for (Entity entity : m_entityManager.getEntities())
+	{
+		auto& animation = entity.get<CAnimation>(m_memoryPool).animation;
+		window.draw(animation.m_sprite);
+	}
+}
+
+void Scene_Play::onEnd()
+{
+	m_game->quit();
+}
+
+void Scene_Play::onExitScene()
+{
+
+}
+
+void Scene_Play::onEnterScene()
+{
+	auto& window = m_game->window();
+	window.setView(m_cameraView);
 }
 
 void Scene_Play::sDoAction(const Action& action)
@@ -317,14 +181,10 @@ void Scene_Play::sDoAction(const Action& action)
 			pInput.up = true;
 		else if (action.m_name == "DOWN")
 			pInput.down = true;
-		if (action.m_name == "FORWARD")
-			pInput.forward = true;
-		else if (action.m_name == "BACKWARD")
-			pInput.backward = true;
 		else if (action.m_name == "ESCAPE")
 		{
 			m_game->changeScene("MENU", std::make_shared<Scene_Menu>(m_game));
-		}	
+		}
 		else if (action.m_name == "LEFT_CLICK")
 		{
 			m_mousePos = m_game->window().mapPixelToCoords(action.m_mousePos);
@@ -354,124 +214,5 @@ void Scene_Play::sDoAction(const Action& action)
 			pInput.up = false;
 		else if (action.m_name == "DOWN")
 			pInput.down = false;
-		if (action.m_name == "FORWARD")
-			pInput.forward = false;
-		else if (action.m_name == "BACKWARD")
-			pInput.backward = false;
-	}
-}
-
-void Scene_Play::sAnimation()
-{
-	auto& transform = player().get<CTransform>(m_memoryPool);
-	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
-	animation.m_sprite.setPosition(transform.pos);
-}
-
-void Scene_Play::sCamera()
-{
-	auto& pTransform = player().get<CTransform>(m_memoryPool);
-	m_cameraView.setCenter(pTransform.pos);
-	m_game->window().setView(m_cameraView);
-}
-
-void Scene_Play::onEnd()
-{
-	m_game->quit();
-}
-
-void Scene_Play::onExitScene()
-{
-
-}
-
-void Scene_Play::onEnterScene()
-{
-	auto& window = m_game->window();
-	window.setView(m_cameraView);
-}
-
-void Scene_Play::sGui()
-{
-
-}
-
-void Scene_Play::sRender()
-{
-	auto& window = m_game->window();
-	sf::Color clearColor = sf::Color(204, 226, 225);
-	window.clear(clearColor);
-
-	static const float RENDER_DIST = 100.0f;
-	static const float RENDER_DIST_SQUARED = RENDER_DIST * RENDER_DIST;
-
-	auto& pGridPos = player().get<CGridPosition>(m_memoryPool).pos;
-	for (auto it = m_chunkMap.rbegin(); it != m_chunkMap.rend(); ++it)
-	{
-		/*auto& cGridPos = chunk.get<CGridPosition>(m_memoryPool).pos;
-		if (pGridPos.distToSquared(cGridPos) > RENDER_DIST_SQUARED) continue;*/
-		
-		auto& chunk = it->second;
-		auto& chunkVertexArray = chunk.get<CVertexArray>(m_memoryPool).va;
-		window.draw(chunkVertexArray, &m_game->assets().getTexture("TexTiles"));
-	}
-
-	auto& animation = player().get<CAnimation>(m_memoryPool).animation;
-	window.draw(animation.m_sprite);
-
-	window.setView(window.getDefaultView());
-
-	sf::Text pGridPosText(m_game->assets().getFont("FutureMillennium"), pGridPos.toString());
-	window.draw(pGridPosText);
-
-	sf::Text cPosText(m_game->assets().getFont("FutureMillennium"),
-		Utils::gridToChunkPos(pGridPos, m_chunkSize3D).toString());
-	cPosText.setPosition(sf::Vector2f(0, height() * 0.05f));
-	window.draw(cPosText);
-
-	window.setView(m_cameraView);
-}
-
-void Scene_Play::buildVertexArrayForChunk(CVertexArray& cVa, CChunkTiles& tileChunk, const sf::Texture& tileset)
-{
-	auto& tiles = tileChunk.tiles;
-	sf::VertexArray& va = cVa.va;
-	va.setPrimitiveType(sf::PrimitiveType::Triangles);
-
-	for (int i = tiles.size() - 1; i >= 0; --i)
-	{
-		Entity& tile = tiles[i];
-		auto& tileGridPos = tile.get<CGridPosition>(m_memoryPool).pos;
-
-		// Optionally skip tiles that are fully enclosed
-		/*if (m_tileMap.find(tileGridPos + Grid3D(1, 1, 1)) != m_tileMap.end())
-			continue;*/
-
-		auto& tileInfo = tile.get<CTileRenderInfo>(m_memoryPool);
-		const sf::Vector2f& pos = tileInfo.position;
-		const sf::Vector2f origin = m_gridCellSize / 2.f;
-		const sf::IntRect& texRect = tileInfo.textureRect;
-
-		// Vertex positions in world space
-		sf::Vector2f topLeft = pos - origin;
-		sf::Vector2f topRight = { topLeft.x + texRect.size.x, topLeft.y };
-		sf::Vector2f bottomRight = { topLeft.x + texRect.size.x, topLeft.y + texRect.size.y };
-		sf::Vector2f bottomLeft = { topLeft.x, topLeft.y + texRect.size.y };
-
-		// Texture coordinates
-		sf::Vector2f texTopLeft(texRect.position.x, texRect.position.y);
-		sf::Vector2f texTopRight(texRect.position.x + texRect.size.x, texRect.position.y);
-		sf::Vector2f texBottomRight(texRect.position.x + texRect.size.x, texRect.position.y + texRect.size.y);
-		sf::Vector2f texBottomLeft(texRect.position.x, texRect.position.y + texRect.size.y);
-
-		// First triangle
-		va.append(sf::Vertex({ topLeft, sf::Color::White, texTopLeft }));
-		va.append(sf::Vertex({ topRight, sf::Color::White, texTopRight }));
-		va.append(sf::Vertex({ bottomRight, sf::Color::White, texBottomRight }));
-
-		// Second triangle
-		va.append(sf::Vertex({ bottomRight, sf::Color::White, texBottomRight }));
-		va.append(sf::Vertex({ bottomLeft, sf::Color::White, texBottomLeft }));
-		va.append(sf::Vertex({ topLeft, sf::Color::White, texTopLeft }));
 	}
 }
