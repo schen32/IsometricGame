@@ -12,6 +12,10 @@ public:
 
 	Grid3D() = default;
 	Grid3D(float ix, float iy, float iz): x(ix), y(iy), z(iz) {}
+	
+	Grid3D floor() const {
+		return Grid3D(std::floor(x), std::floor(y), std::floor(z));
+	}
 
 	std::string toString() const {
 		std::ostringstream oss;

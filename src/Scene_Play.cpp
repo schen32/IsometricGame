@@ -93,7 +93,7 @@ void Scene_Play::spawnPlayer()
 	
 	auto& pAnimation = p.add<CAnimation>(m_memoryPool, m_game->assets().getAnimation("StormheadIdle"), true);
 
-	Grid3D gridPos(0, 0, -m_chunkSize3D.z);
+	Grid3D gridPos(m_chunkSize3D.x, m_chunkSize3D.y, -m_chunkSize3D.z);
 	p.add<CTransform>(m_memoryPool, Utils::gridToIsometric(gridPos, m_gridCellSize));
 	p.add<CGridPosition>(m_memoryPool, gridPos);
 	p.add<CInput>(m_memoryPool);
@@ -180,7 +180,6 @@ void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& c
 	Grid3D& cPos = chunkGridPos.pos;
 	int startX = cPos.x, endX = cPos.x + m_chunkSize3D.x;
 	int startY = cPos.y, endY = cPos.y + m_chunkSize3D.y;
-	int startZ = cPos.z, endZ = cPos.z + m_chunkSize3D.z;
 
 	for (int x = startX; x < endX; ++x)
 	{
@@ -189,17 +188,18 @@ void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& c
 		{
 			if (y < 0 || y >= m_gridSize3D.y) continue;
 
-			int columnHeight = m_heightMap[y * m_gridSize3D.x + x];
+			int flatIndex = y * m_gridSize3D.x + x;
+			int columnHeight = m_heightMap[flatIndex];
+			int startZ = std::max(static_cast<int>(cPos.z), columnHeight);
+			int endZ = cPos.z + m_chunkSize3D.z;
+
 			for (int z = startZ; z < endZ; ++z)
 			{
-				if (z < columnHeight)
-					z = columnHeight;
 				Grid3D gridPos(x, y, z);
 
-				// Skip if already exists
-				if (!m_tileSet.insert(gridPos).second) continue;
+				auto [it, inserted] = m_tileSet.insert(gridPos);
+				if (!inserted) continue;
 
-				// Check if surrounded
 				bool surrounded =
 					m_tileSet.contains(gridPos - Grid3D(1, 0, 0)) &&
 					m_tileSet.contains(gridPos - Grid3D(0, 1, 0)) &&
@@ -212,10 +212,11 @@ void Scene_Play::spawnTilesFromChunk(CGridPosition& chunkGridPos, CChunkTiles& c
 	}
 }
 
+
 Entity Scene_Play::spawnTile(Grid3D& chunkPos)
 {
-	const static int m_grassLevel = 24;
-	const static int m_snowLevel = 40;
+	const static int m_grassLevel = 22;
+	const static int m_snowLevel = 36;
 	int waterLevel = -m_waterLevel;
 	int grassLevel = -m_grassLevel;
 	int snowLevel = -m_snowLevel;
@@ -278,7 +279,6 @@ void Scene_Play::sMovement()
 
 	if (!(delta == Grid3D{ 0, 0, 0 })) {
 		grid.pos += delta;
-
 		transform.prevPos = transform.pos;
 		transform.pos = Utils::gridToIsometric(grid.pos, m_gridCellSize);
 	}

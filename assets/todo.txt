@@ -1,3 +1,4 @@
 Collisions
 Delay entity creation until its visible
 Destructable entities
+Draw order (player behind tile or vice versa)
